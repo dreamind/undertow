@@ -1,0 +1,26 @@
+{
+  "name": "undertow",
+  "preferGlobal": "true",
+  "version": "0.0.1",
+  "author": "dreamind <dreamind@gmail.com>",
+  "description": "An extension to underscore",
+  "main": "undertow.js",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/dreamind/undertow.git"
+  },
+  "keywords": [
+    "underscore",
+    "undertow"
+  ],
+  "dependencies" : {
+    "underscore":  "*"
+  },
+  "noAnalyze": true,
+  "devDependencies": {},
+  "bundleDependencies": [],
+  "license": "MIT",
+  "engine": {
+    "node": ">=0.6"
+  }
+}
