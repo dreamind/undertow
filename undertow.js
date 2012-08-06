@@ -18,7 +18,11 @@
  *
  */
 
+
+
 (function() {// start enclosure
+
+  var _ = require('underscore');
 
   // Repeated from underscore.js
   // ---------------------------
@@ -33,11 +37,8 @@
 
   var logFilters = [];
 
-  // Establish the root object, `window` in the browser, or `global` on the server.
-  var root = this;
-
   // Save the previous value of the `_` variable.
-  var previousUnderscore = root._;
+  var previousUnderscore = _;
 
   if (typeof exports !== 'undefined') {
     if (typeof module !== 'undefined' && module.exports) {
