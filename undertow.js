@@ -5,7 +5,8 @@
  * Collection of various utility functions.
  *
  * Dependencies:
- * underscore.js
+ * underscore.js (strict)
+ *
  * dojox (optional)
  * ExtJS (optional)
  * OpenLayers (optional)
@@ -19,10 +20,7 @@
  */
 
 
-
 (function() {// start enclosure
-
-  var _ = require('underscore');
 
   // Repeated from underscore.js
   // ---------------------------
@@ -35,19 +33,26 @@
       toString         = ObjProto.toString,
       hasOwnProperty   = ObjProto.hasOwnProperty;
 
-  var logFilters = [];
+  
 
-  // Save the previous value of the `_` variable.
-  var previousUnderscore = _;
-
-  if (typeof exports !== 'undefined') {
+  if (typeof exports !== 'undefined') { // in node js
+    var _ = require('underscore');
     if (typeof module !== 'undefined' && module.exports) {
-      exports = module.exports = previousUnderscore;
+      exports = module.exports = _;
     }
-    exports._ = previousUnderscore;
+    exports._ = _;
+  } else { // in browser
+    var _ = window._
+    if (!_) { // underscore not included
+      console.log('underscore.js must be included')
+      return;
+    }    
   }
+  _.undertow = {};
+  var u = _.undertow;
+  u.logFilters = [];
 
-  previousUnderscore.mixin({
+  _.mixin({
 
     // high-level typeOf
     // based on http://javascript.crockford.com/remedial.html
@@ -92,16 +97,14 @@
     },
 
     logSetFilter: function(filters) {
-      logFilters = filters;
-
+      u.logFilters = filters;
     },
 
-    log: function() {
-
+    log: function() { // always call using (this, ...)
       var emitter = arguments[0];
       var classes = _.getClasses(emitter);
       console.log("LOG",arguments, classes, logFilters);
-      if( logFilters.length == 0 || _.arrIntersect(classes, logFilters) ) {
+      if( u.logFilters.length == 0 || _.arrIntersect(classes, logFilters) ) {
         arguments[0] = classes[0] || emitter;
         // arguments.shift();
         console.log(Array.prototype.slice.call(arguments));
@@ -110,7 +113,7 @@
 
     getClasses: function getClasses(thing) {
       if (_.typeOf(thing) != 'object')
-        return;
+        return [];
       var classes = [], className;
       if ('$className' in thing) { // ExtJS OOP-style
         classes[0] = thing['$className'];
@@ -142,12 +145,12 @@
     uuid4: function b(a){return a?(a^Math.random()*16>>a/4).toString(16):([1e7]+-1e3+-4e3+-8e3+-1e11).replace(/[018]/g,b)},
 
     // String
-    stringJoin: function(arr, quote) {
+    strJoin: function(arr, quote) {
       var result = '', len = arr.length;
 
       for (var i = 0; i < len; i++) {
         result += quote + arr[i] + quote;
-        if (i < len - 1) {
+        if (i < len-1) {
           result += ",";
         }
       }
@@ -155,23 +158,29 @@
     },
 
     traverse: function(obj, arrKeys, create) {
-      var n = obj, j = arrKeys.length, k;
+      var n = obj, j = arrKeys.length, k, nn;
 
       for (var i = 0; i < j; i++) {
         k = arrKeys[i];
         if (k in n) {
-          n = n[k];
+          nn = n[k];
         } else {
+          nn = null;
+        }
+        if (!nn) {
           if (!create) {
-            return null
+            return null;
           }
           n = n[k] = {};
+        } else {
+          n = nn;
         }
       }
       return n;
     },
 
     // read, update and remove interfaces to hash object
+    // the obj will not be changed
     read: function(obj, arrKeys, defaultVal) {
       var n = _.traverse(obj, arrKeys);
       if(n == null && defaultVal) {
@@ -285,7 +294,7 @@
           result[key] = fn(val);
           continue;
         }
-        result[key] = value;
+        result[key] = val;
       }
       return result;
     },
@@ -334,7 +343,7 @@
      */
     // Object
     getterx: function(getter) {
-      var type = typeOf(getter);
+      var type = _.typeOf(getter);
       var f = function(obj) {
         return getter;
       };
@@ -345,7 +354,7 @@
         }
       } else if (type == 'array') {
         f = function(obj) {
-          return traverse(obj, getter);
+          return _.traverse(obj, getter);
         }
       } else if (type == 'function') {
         f = function(obj) {
@@ -361,29 +370,27 @@
       return f;
     },
 
-    setterx: function(picker) {
-      var key, type, f;
+    setterx: function(setter) {
+      var type, f;
 
-      key = ('key' in picker) ? picker.key : picker.getter;
-      type = typeOf(key);
-
+      type = _.typeOf(setter);
       if (type == 'string') {
-        f = function(obj, value) {
-          obj[key] = value;
+        f = function(obj, value) {          
+          obj[setter] = value;
           return value;
         };
       } else if (type == 'array') {
         f = function(obj, value) {
-          _.update1(obj, key, value)
+          _.update1(obj, setter, value)
           return value;
         }
       } else if (type == 'function') {
         f = function(obj, value) {
-          return key(obj, value);
+          return setter(obj, value);
         }
       } else {
-        f = function(obj, value, obj1) {
-          obj.key = value;
+        f = function(obj, value) {
+          obj[setter] = value;
           return value;
         };
       }
@@ -440,18 +447,18 @@
     },
 
     transfunction: function(qualifiers, kinds, flag) {
-      var fs = [], q;
+      var fs = [], q, f, k, fx, k2, l;
 
-      for (i = 0, j = qualifiers.length; i < j; i++) { // applied in sequence
+      for (var i = 0, j = qualifiers.length; i < j; i++) { // applied in sequence
         q = qualifiers[i];
         l = kinds.length;
         f = {};
-        while (l++) {
+        while (l--) {
           k = kinds[l];
           fx = _[k+'x'];
-          // e.g. if setter is not in translator, getter should always be there
-          k = (k in q) ? k : 'getter';
-          f[k] = fx(q[k], flag);
+          // e.g. if setter is not specified use getter
+          k2 = (k in q) ? k : 'getter';
+          f[k] = fx(q[k2], flag);
         }
         fs[fs.length] = f;
       }
@@ -477,15 +484,15 @@
      *
      */
     matcherx: function(matchers, flag) {
-      return transfunction(matchers, ['getter', 'valuer'], flag);
+      return _.transfunction(matchers, ['getter', 'valuer'], flag);
     },
 
-    accessorx: function(accessors) {
-      return transfunction(matchers, ['getter'], flag);
+    accessorx: function(accessors, flag) {
+      return _.transfunction(accessors, ['getter'], flag);
     },
 
-    translatorx: function(translators) {
-      return transfunction(matchers, ['getter', 'setter'], flag);
+    translatorx: function(translators, flag) {
+      return _.transfunction(translators, ['getter', 'setter'], flag);
     },
 
     /**
@@ -514,7 +521,7 @@
     match2: function(obj, matcherfs, flag) {
       var matcherf;
 
-      for (i = 0, j = matcherfs.length; i < j; i++) {
+      for (var i = 0, j = matcherfs.length; i < j; i++) {
         matcherf = matcherfs[i];
         if (matcherf.valuer(matcherf.getter(obj))){
           if (!flag) { // or
@@ -555,7 +562,7 @@
       var result = [];
       var accessorf, value;
 
-      for (i = 0, j = accessorfs.length; i < j; i++) {
+      for (var i = 0, j = accessorfs.length; i < j; i++) {
         accessorf = accessorfs[i];
         result[result.length] = accessorf.getter(obj);
       }
@@ -585,12 +592,12 @@
       var translatorf;
       if (!obj2) obj2 = {};
 
-      for (i = 0, j = translatorfs.length; i < j; i++) {
+      for (var i = 0, j = translatorfs.length; i < j; i++) {
         translatorf = translatorfs[i];
         try {
           translatorf.setter(obj2, translatorf.getter(obj1), obj1);
         } catch (err) {
-          console.log('translate.error');
+          console.log('translate.error', err);
           return obj2;
         }
       }
@@ -613,7 +620,7 @@
      */
     translate3: function(rows, translators) {
       var result = _.isArray(rows) ? []: {}, obj2;
-      var translatefs = _.translatex(translators);
+      var translatefs = _.translatorx(translators);
       _.each(rows, function(row, index) {
         result[index] = _.translate(row, {}, translatefs);
       });
@@ -710,11 +717,26 @@
 
       var f = _.getterx(getter);
       var results = concatf(rows1);
-      var values = _.hashify(_.pluck3(rows1, getter)); // hold unique key values
 
       _.each(rows2, function(row, index) {
         if (f(row) in values) return; // skip
         results[index] = _.clone(row);
+      });
+      return results;
+    },
+
+    unique3: function(rows, translators, shallow) {
+      var clonef = (shallow) ? _.clone : _.cloneDeep;
+
+      var f = _.getterx(getter);
+      var translatefs = _.translatorx(translators);
+      var values = {};
+      var results = [];
+
+      _.each(rows, function(row, index) {
+        result[index] = _.translate(row, {}, translatefs);
+        if (f(row) in values) return; // skip
+        results[results.length] = clonef(row);
       });
       return results;
     },
