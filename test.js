@@ -13,7 +13,7 @@ var obj1 = {
     k21: "k2-k21",
     k22: ["k2-k22-0", "k2-k22-1"]
   }
-}
+};
 
 var translators1 = [
   { "getter": ["k2", "k21"], "setter": "k2-k21" },
@@ -47,7 +47,7 @@ describe('undertow', function(){
     
     function f(a) {
       return this.injected + a;
-    };
+    }
     var f2 = _.xf(f, {injected: 9});
 
     it('should be able to inject object', function() {
@@ -75,8 +75,8 @@ describe('undertow', function(){
       assert.equal(_.traverse(obj1, ["k2", "k3"]), null);
     });
     it('should return null for non-existing keys', function(){
-      var obj = {}, create = true;
-      var newAttr = _.traverse(obj, ["k2", "k23"], create)
+      var obj = {}, create = true
+        , newAttr = _.traverse(obj, ["k2", "k23"], create);
       assert.deepEqual(newAttr, {});
       newAttr.k231 = 'k2-k23-k231';
       assert.deepEqual(obj, {
@@ -84,6 +84,46 @@ describe('undertow', function(){
           k23: {
             k231: 'k2-k23-k231'
           }
+        }
+      });      
+    });
+  });
+
+  describe('#update2()', function() {
+
+    it('should work for obj and array combination, new keys', function(){
+      var obj = {}, create = true;
+      assert.deepEqual(_.update2(obj, ["k2", 0], 'k20', create), {
+        k2: ['k20']
+      });      
+    });
+    it('should work for obj and array combination, existing keys', function(){
+      var obj = {
+          'k1': [1, 2, 3]
+        }
+        , create = true;
+      assert.deepEqual(_.update2(obj, ["k1", 1], 'k12', create), {
+          'k1': [1, 'k12', 3]
+        });      
+    });
+    it('should work for obj, new keys', function(){
+      var obj = {}, create = true;
+      assert.deepEqual(_.update2(obj, ["k2", 'k21'], 'k21', create), {
+        k2: {
+          k21: 'k21'
+        }
+      });      
+    });
+    it('should work for obj, existing keys', function(){
+      var obj = {
+          k2: {
+            k21: 'xxx'
+          }
+        }
+        , create = true;
+      assert.deepEqual(_.update2(obj, ["k2", 'k21'], 'k21', create), {
+        k2: {
+          k21: 'k21'
         }
       });      
     });
@@ -100,14 +140,6 @@ describe('undertow', function(){
     });
   });
 
-  describe('#cloneDeep()', function() {
-    it('should return deep-equally clone', function(){
-      assert.deepEqual(_.cloneDeep(obj1), obj1);      
-    });
-    it('should return clone of different instance', function(){
-      assert.notStrictEqual(_.cloneDeep(obj1), obj1);
-    });
-  });
 
   describe('#update()', function() {
     var obj = _.cloneDeep(obj1);
@@ -136,21 +168,478 @@ describe('undertow', function(){
     });
   });
 
+  describe('#add()', function() {
+    it('should add to an empty set', function(){
+      var obj = {};
+      assert.deepEqual(_.add(obj, 'a'), {a: 1});      
+    });
+    it('should add to an existing set', function(){
+      var obj = {a: 1};
+      assert.deepEqual(_.add(obj, 'a'), {a: 1});
+      assert.deepEqual(_.add(obj, 'b'), {a: 1, b: 1});      
+    });
+  });
+
+  describe('#concatDeep()', function() {
+    var a1 = [1, { "two": 2 }]
+      , a2 = [{ "three": 3 }]
+      , a3 = [1, { "two": 2 }, { "three": 3 }];
+
+    it('should return concatenated arrays', function(){
+      assert.deepEqual(_.concatDeep(a1, a2), a3);      
+    });
+  });
+
+  describe('#cloneDeep()', function() {
+    it('should return deep-equally clone', function(){
+      assert.deepEqual(_.cloneDeep(obj1), obj1);      
+    });
+    it('should return clone of different instance', function(){
+      assert.notStrictEqual(_.cloneDeep(obj1), obj1);
+    });
+  });
+
+  describe('#extendDeep()', function() {
+    var a1 = { 1: 'one', 't2': { "two": 2 } }
+      , a2 = { "three": 3, 4: [5, 6] }
+      , a3 = { 1: 'one', 't2': { "two": 2 }, "three": 3, 4: [5, 6] };
+
+    it('should return deep applied object', function(){
+      assert.deepEqual(_.extendDeep(a1, a2), a3);      
+    });
+  });
+
   describe('#getterx()', function(){
-    for (var i = 0; i < getterCases.length; i++) {
-      var c = getterCases[i];
-      var f = _.getterx(c);
-      var o = (typeof c == 'string') ? [c] : c; // make array
-      o = o.join('-');
-      it('should return '+o+' for case '+c.toString(), function(){
+    var genf = function (o, f) {
+      return function(){
         assert.deepEqual(o, f(obj1));
-      });
+      };
+    };
+
+    for (var i = 0; i < getterCases.length; i++) {
+      var c = getterCases[i]
+        , f = _.getterx(c)
+        , o = (typeof c == 'string') ? [c] : c; // make array
+      o = o.join('-');
+      it('should return '+o+' for case '+c.toString(), genf(o, f));
     }
   });
 
-  describe('#translate()', function(){
+  describe('#cull()', function() {
+    // function (obj, getter)
+    it('should pluck by using simple key', function(){
+      assert.equal(_.cull({'key': 777}, 'key'), 777);
+    });
+    it('should pluck by using an array of keys', function(){
+      assert.equal(_.cull({'key': [1, {'two': 222}]}, ['key', 1, 'two']), 222);
+    });
+    it('should pluck by using a function', function(){
+      assert.equal(_.cull({'key': [2, {'two': 222}]}, function(obj){ return obj.key[0]*4; }), 8);
+    });
+  });
+
+  describe('#extract()', function() { // pluck2: function(obj, accessors)
+    var obj = {
+          key: 777
+        , k2: [2, {'two': 222}]
+        }
+      , accessors = [
+          { getter: 'key' }
+        , { getter: ['k2', 1, 'two'] }
+        , { getter: function(obj){ return obj.k2[0]*4; } }
+        ];
+      
+    it('should pluck by using a function', function(){
+      assert.deepEqual(_.extract(obj, accessors), [777, 222, 8]);
+    });
+  });
+
+  describe('#hashify3()', function() { // function(rows, accessors)
+
+    it('should hashify by using a getter', function(){
+
+      var rows = [
+        { "attributeName": "LGA_CODE",
+          "attributeInclude": true,
+          "attributeComments": "LGA Code"
+        }
+      , { "attributeName": "LGA_NAME",
+          "attributeInclude": true,
+          "attributeComments": "LGA Name"
+        }
+      , { "attributeName": "STE_NAME",
+          "attributeInclude": true,
+          "attributeComments": "State Name"
+        }
+      ];
+      assert.deepEqual(_.hashify3(rows, "attributeName"), {
+        "LGA_CODE": rows[0]
+      , "LGA_NAME": rows[1]
+      , "STE_NAME": rows[2]
+      });
+    });
+
+    it('should pluck by using a function', function(){
+      var rows = {
+            'josh' : [7, 'male', {origin: 'id'}]
+          , 'luca' : [8, 'male', {origin: 'it'}]
+          }
+        , accessors = [
+            { getter: 0 }
+          , { getter: [2, 'origin'] }
+          ];
+      assert.deepEqual(_.extract3(rows, accessors), {
+        'josh': [7, 'id']
+      , 'luca': [8, 'it']
+      });
+    });
+  });
+
+  describe('#pluck3()', function() { // function(rows, accessors)
+
+    it('should pluck', function(){
+      var rows = [
+            { name: 'josh', age: { unit: 'year', val: 7 } , sex: 'male'}
+          , { name: 'luca', age: { unit: 'year', val: 8 }, sex: 'male'}
+          ]
+        , getter = ['age', 'val'];
+
+      assert.deepEqual(_.pluck3(rows, getter), [7, 8]);
+    });
+
+  });
+
+  describe('#extract3()', function() { // function(rows, accessors)
+
+    it('should extract by using a function', function(){
+      var rows = [
+            { name: 'josh', age: 7, sex: 'male'}
+          , { name: 'luca', age: 8, sex: 'male'}
+          ]
+        , accessors = [
+            { getter: 'name' }
+          , { getter: 'age' }
+          ];
+
+      assert.deepEqual(_.extract3(rows, accessors), [
+        ['josh', 7]
+      , ['luca', 8]
+      ]);
+    });
+
+    it('should extract by using a function', function(){
+      var rows = {
+            'josh' : [7, 'male', {origin: 'id'}]
+          , 'luca' : [8, 'male', {origin: 'it'}]
+          }
+        , accessors = [
+            { getter: 0 }
+          , { getter: [2, 'origin'] }
+          ];
+      assert.deepEqual(_.extract3(rows, accessors), {
+        'josh': [7, 'id']
+      , 'luca': [8, 'it']
+      });
+    });
+  });
+
+
+  describe('#grab3()', function() { 
+
+    it('should grab a list', function(){
+      var rows = [
+            { name: 'josh', age: 7, sex: 'male'}
+          , { name: 'luca', age: 8, sex: 'male'}
+          ]
+        , getters = ['name', 'age'];
+
+      assert.deepEqual(_.grab3(rows, getters), [
+        ['josh', 7]
+      , ['luca', 8]
+      ]);
+      assert.deepEqual(_.grab3(rows, 'name', 'age'), [
+        ['josh', 7]
+      , ['luca', 8]
+      ]);
+    });
+    
+    it('should grab a dictionary', function(){
+      var rows = {
+            'josh' : [7, 'male', {origin: 'id'}]
+          , 'luca' : [8, 'male', {origin: 'it'}]
+          }
+        , getters = [0, [2, 'origin']];
+      assert.deepEqual(_.grab3(rows, getters), {
+        'josh': [7, 'id']
+      , 'luca': [8, 'it']
+      });
+    });
+  });
+
+  describe('#pick3()', function() { 
+
+    it('should pick a list', function(){
+      var rows = [
+            { name: 'josh', age: 7, sex: 'male'}
+          , { name: 'luca', age: 8, sex: 'male'}
+          ]
+        , keys = ['name', 'age'];
+
+      assert.deepEqual(_.pick3(rows, keys), [
+        { name: 'josh', age: 7 }
+      , { name: 'luca', age: 8 }
+      ]);
+      assert.deepEqual(_.pick3(rows, 'name', 'age'), [
+        { name: 'josh', age: 7 }
+      , { name: 'luca', age: 8 }
+      ]);
+    });
+    
+    it('should pick a dictionary', function(){
+      var rows = {
+            'josh' : { age: 7, sex: 'male' }
+          , 'luca' : { age: 8, sex: 'male' }
+          }
+        , keys = ['age'];
+      assert.deepEqual(_.pick3(rows, keys), {
+        'josh': { age: 7 }
+      , 'luca': { age: 8 }
+      });
+    });
+  });
+
+
+  describe('#matchObject()', function() { 
+
+    it('should matchObject a list', function(){
+      var rows = [
+            { name: 'josh', age: 7, sex: 'male' }
+          , { name: 'luca', age: 8, sex: 'male' }
+          ]
+        , obj1 = { name: 'josh', age: 7, sex: 'male' }
+        , obj2 = { sex: 'male' }
+        , exact = 1
+        , results;
+
+      results = _.matchObject(rows, obj1, exact);
+      assert.deepEqual(results, [
+        rows[0]
+      ]);
+      assert.strictEqual(results[0], rows[0]);
+      exact = 0;
+      assert.deepEqual(_.matchObject(rows, obj2, exact), rows);
+    });
+    
+    it('should matchObject a dictionary', function(){
+      var rows = {
+            'josh' : { age: 7, sex: 'male' }
+          , 'luca' : { age: 8, sex: 'male' }
+          }
+        , obj1 = { age: 9 }
+        , obj2 = { age: 8 }
+        , exact = 0;
+
+      assert.deepEqual(_.matchObject(rows, obj1, exact), {});
+      exact = 1;
+      assert.deepEqual(_.matchObject(rows, obj2, exact), {});
+      exact = 0;
+      assert.deepEqual(_.matchObject(rows, obj2, exact), {
+        'luca': rows['luca']
+      });
+    });
+  });
+
+  describe('#match1()', function() { 
+    var rows = [
+          { id: 'josh', age: 7, sex: 'male',
+            name: {
+              first: 'josh'
+            , last: 'posh'
+            }
+          }
+        , { id: 'jane', age: 8, sex: 'female',
+            name: {
+              first: 'jane'
+            , last: 'caine'
+            }
+          }
+        , { id: 'senior', age: 88, sex: 'male',
+            name: {
+              first: 'josh'
+            , last: 'posh'
+            }
+          }
+        ]
+      , matchers, exact; 
+
+    it('should match1 a list 1', function() {
+      var matchers = [
+            {"getter": "age", "valuer": 8},
+            {"getter": ["name", "last"], "valuer": ["posh", "caine"], "exact":0 }
+          ]
+        , matcherfs = _.matcherx(matchers), all;
+
+      all = 1;
+      assert.isFalse(_.match1(rows[0], matcherfs, all));
+      assert.isTrue(_.match1(rows[1], matcherfs, all));
+      assert.isFalse(_.match1(rows[2], matcherfs, all));
+      all = 0;
+      assert.isTrue(_.match1(rows[0], matcherfs, all));
+      assert.isTrue(_.match1(rows[1], matcherfs, all));
+      assert.isTrue(_.match1(rows[2], matcherfs, all));
+
+    });
+    
+    it('should match1 a list 2', function() {
+      var matchers = [
+            {"getter": "age", "valuer": function (val) { return val <= 8; } },
+            {"getter": ["name", "last"], "valuer": ["caine", "buddy"], "exact": 0  }
+          ]
+        , matcherfs = _.matcherx(matchers), all;
+      all = 1;
+      assert.isFalse(_.match1(rows[0], matcherfs, all), 'case 1');
+      assert.isTrue(_.match1(rows[1], matcherfs, all), 'case 2');
+      assert.isFalse(_.match1(rows[2], matcherfs, all), 'case 3');
+      all = 0;
+      assert.isTrue(_.match1(rows[0], matcherfs, all), 'case 4');
+      assert.isTrue(_.match1(rows[1], matcherfs, all), 'case 5');
+      assert.isFalse(_.match1(rows[2], matcherfs, all), 'case 6');
+    });
+    
+    /*
+    it('should match1 a list 3', function() {
+      matchers = [
+        {"getter": "id", "valuer": /j.+/},
+        {"getter": "name", "valuer": {
+            first: 'josh'
+          , last: 'posh'
+          }
+        }
+      ];
+      exact = 1;
+      assert.deepEqual(_.matchMatchers(rows, matchers, exact), [
+        rows[0]
+      ]);
+    });*/
+
+  });
+
+
+  describe('#matchMatchers()', function() { 
+    var rows = [
+          { id: 'josh', age: 7, sex: 'male',
+            name: {
+              first: 'josh'
+            , last: 'posh'
+            }
+          }
+        , { id: 'jane', age: 8, sex: 'female',
+            name: {
+              first: 'jane'
+            , last: 'caine'
+            }
+          }
+        , { id: 'senior', age: 88, sex: 'male',
+            name: {
+              first: 'josh'
+            , last: 'posh'
+            }
+          }
+        ]
+      , matchers, exact; 
+
+    it('should matchMatcher a list 1', function() {
+      var matchers = [
+        {"getter": "age", "valuer": 8},
+        {"getter": ["name", "last"], "valuer": ["posh", "caine"], "exact": 0 }
+      ], all;
+      all = 1;
+      assert.deepEqual(_.matchMatchers(rows, matchers, all), [
+        rows[1]
+      ]);
+    });
+
+    it('should matchMatcher a list 2', function() {
+      var matchers = [
+        {"getter": "age", "valuer": function (val) { return val <= 8; }},
+        {"getter": ["name", "last"], "valuer": ["caine"], "exact": 0 }
+      ], all;
+      all = 0;
+      assert.deepEqual(_.matchMatchers(rows, matchers, all), [
+        rows[0]
+      , rows[1]
+      ]);
+    });
+    
+    it('should matchMatcher a list 3', function() {
+      var matchers = [
+        {"getter": "id", "valuer": /j.+/},
+        {"getter": "name", "valuer": {
+            first: 'josh'
+          , last: 'posh'
+          }
+        }
+      ], all;
+      all = 1;
+      assert.deepEqual(_.matchMatchers(rows, matchers, all), [
+        rows[0]
+      ]);
+    });
+  });
+
+/*  , matchMatchers: function(rows, matchers, flag) {
+      var isArray = _.isArray(rows)
+        , result = (isArray) ? []: {}
+        , matcherfs = matcherx(matchers, flag);
+
+      _.each(rows, function(row, index) {      
+        if (match1(row, matcherfs, flag)) {          
+          result[(isArray) ? result.length : index] = row;
+        }
+      });
+      return result;
+    },
+
+    /**
+     * Perform complex matching
+     *
+     * @param {Object} obj Object to be match
+     * @param {Object} cmatcher Complex matcher
+     * @param {Boolean} flag 1 for exact match otherwise
+     *   use partial match
+     *
+     * Complex matcher:
+     *
+     * [ {"getter": "age", "valuer": 24},
+     *   {"getter": ["name", "last"], "valuer": ["doe", "lee"] },
+     *   {"getter": "prop", "valuer": {object} },
+     *   {"getter": { 'dojox.json.query': '$.email.[0]' } , "valuer": /.+@gmail.com/},
+     *   {"getter": { 'dojox.json.query': '$.x.y' } , "valuer": function(value) {} },
+     * ]
+     *
+     */
+
+
+
+  describe('#translate1()', function() {
+
+    var obj1 = {
+      k1: "k1",
+      k2: {
+        k21: "k2-k21",
+        k22: ["k2-k22-0", "k2-k22-1"]
+      }
+    };
+    
+    var translators1 = [
+      { "getter": ["k2", "k21"], "setter": "k2-k21" },
+      { "getter": "k1" },
+      { "getter": ["k2", "k22", 0], "setter": "k2-k22-0" },
+      { "getter": ["k2", "k22", 1], "setter": "k2-k22-1" }
+    ];
+
     var translatefs = _.translatorx(translators1);
-    var obj2 = _.translate(obj1, {}, translatefs);
+    var obj2 = _.translate1(obj1, {}, translatefs);
     var obj3 = {
       'k1': "k1",
       'k2-k21': "k2-k21",
@@ -160,7 +649,176 @@ describe('undertow', function(){
     
     it('should return '+obj3+' for '+translators1, function(){
       assert.deepEqual(obj3, obj2);
-    })
+    });
   });
 
-})
+  describe('#translate3()', function() {
+
+     /* Translators:
+     *
+     * [ {"getter": "age" },
+     *   {"getter": ["name", "last"], "setter": "lastname" },
+     *   {"getter": { 'dojox.json.query': '$.email.[0]' } , "setter": ["email", "first"] },
+     *   {"getter": { 'dojox.json.query': '$.x.y' } , "setter": function(object, value) {} },
+     * ]*/
+
+    var features = [
+          {
+            "type":"Feature",
+            "geometry":{
+              "type":"Point",
+              "coordinates":[
+                143.86010667724767,
+                -37.55014044374228
+              ]
+            },
+            "properties":{
+              "OBJECTID":1,
+              "UID":"1"
+            }
+          },
+          {
+            "type":"Feature",
+            "geometry":{
+              "type":"Point",
+              "coordinates":[
+                143.8704063598638,
+                -37.55667279542442
+              ]
+            },
+            "properties":{
+              "OBJECTID":2,
+              "UID":"2"
+            }
+          },
+          {
+            "type":"Feature",
+            "geometry":{
+              "type":"Point",
+              "coordinates":[
+                143.85667344970298,
+                -37.56102737843926
+              ]
+            },
+            "properties":{
+              "OBJECTID":3,
+              "UID":"3"
+            }
+          }
+        ]
+    , results = [
+          { long: 143.86010667724767
+          , lat: -37.55014044374228
+          , id: 1
+          },
+          { long: 143.8704063598638
+          , lat: -37.55667279542442
+          , id: 2
+          },
+          { long: 143.85667344970298
+          , lat: -37.56102737843926
+          , id: 3
+          }
+        ]    
+    var translators = [
+      { "getter": ["geometry", "coordinates", 0], "setter": "long" },
+      { "getter": ["geometry", "coordinates", 1], "setter": "lat" },
+      { "getter": ["properties", "OBJECTID"], "setter": "id" }
+    ];
+        
+    it('should translate3 ', function(){
+      assert.deepEqual(_.translate3(features, translators), results);
+    });
+  });
+
+  describe('#mapKey3()', function() { 
+
+      var rows = [
+            { name: 'josh', age: 7, sex: 'female'}
+          , { name: 'luca', age: 8, sex: 'male'}
+          ]
+        , keys = ['name', 'sex']
+        , newKeys = ['id', 'gender'];
+
+    it('should mapKey3', function(){
+      assert.deepEqual(_.mapKey3(rows, keys, newKeys), [
+        { id: 'josh', age: 7, gender: 'female' }
+      , { id: 'luca', age: 8, gender: 'male' }
+      ]);
+    });
+
+    it('should mapKey3', function(){
+      var filter = true;
+      assert.deepEqual(_.mapKey3(rows, keys, newKeys, filter), [
+        { id: 'josh', gender: 'female' }
+      , { id: 'luca', gender: 'male' }
+      ]);
+    });
+
+    it('should mapKey3 deep', function(){
+      var rows = {
+          'josh': {
+            age: 7
+          , sex: 'male'
+          , name: {
+              first: 'josh'
+            , last: 'posh'
+            }
+          }
+        , 'jane': {
+            age: 8
+          , sex: 'female'
+          , name: {
+              first: 'jane'
+            , last: 'caine'
+            }
+          }
+        , 'senior': {
+            age: 88
+          , sex: 'male'
+          , name: {
+              first: 'josh'
+            , last: 'posh'
+            }
+          }
+        }
+        , keys = ['age', 'sex']
+        , newKeys = ['agegroup', 'gender'];
+      var expected = {
+          'josh': {
+            agegroup: 7
+          , gender: 'male'
+          , name: {
+              first: 'josh'
+            , last: 'posh'
+            }
+          }
+        , 'jane': {
+            agegroup: 8
+          , gender: 'female'
+          , name: {
+              first: 'jane'
+            , last: 'caine'
+            }
+          }
+        , 'senior': {
+            agegroup: 88
+          , gender: 'male'
+          , name: {
+              first: 'josh'
+            , last: 'posh'
+            }
+          }
+        };
+      var filter = false, deep = false;
+      var results = _.mapKey3(rows, keys, newKeys, filter, deep)
+      assert.deepEqual(results, expected);
+      assert.strictEqual(rows.josh.name, results.josh.name);
+      var filter = false, deep = true;
+      var results = _.mapKey3(rows, keys, newKeys, filter, deep)
+      assert.deepEqual(results, expected);
+      assert.notStrictEqual(rows.josh.name, results.josh.name);
+    });    
+  });
+
+});

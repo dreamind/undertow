@@ -25,31 +25,27 @@
   // Repeated from underscore.js
   // ---------------------------
   // Save bytes in the minified (but not gzipped) version:
-  var ArrayProto = Array.prototype, ObjProto = Object.prototype, FuncProto = Function.prototype;
-
   // Create quick reference variables for speed access to core prototypes.
-  var slice            = ArrayProto.slice,
-      unshift          = ArrayProto.unshift,
-      toString         = ObjProto.toString,
-      hasOwnProperty   = ObjProto.hasOwnProperty;
+  var slice = Array.prototype.slice
+    , evil = eval
+    , _, u;
 
-  
-
-  if (typeof exports !== 'undefined') { // in node js
-    var _ = require('underscore');
+  if (typeof exports !== 'undefined') { // node js environment
+    _ = require('underscore');
     if (typeof module !== 'undefined' && module.exports) {
-      exports = module.exports = _;
+      exports = _;
+      module.exports = _;
     }
     exports._ = _;
   } else { // in browser
-    var _ = window._
+    _ = window._;
     if (!_) { // underscore not included
-      console.log('underscore.js must be included')
+      console.log('underscore.js must be included');
       return;
     }    
   }
-  _.undertow = {};
-  var u = _.undertow;
+
+  u = _.undertow = {};
   u.logFilters = [];
 
   _.mixin({
@@ -79,6 +75,8 @@
             return 'array';
           } else if (thing instanceof RegExp) {
             return 'regexp';
+          } else if (typeof Iterator !== 'undefined' && thing instanceof Iterator) {
+            return 'iterator';
           }
         } else {
           return 'null';
@@ -87,9 +85,21 @@
       return type;
     },
 
+
+    blankOf: function (thing) {
+      var constructor = thing.constructor
+        , type = _.typeOf(constructor);
+
+      if (constructor) {
+        if (type === 'object')
+          return new constructor();        
+      }
+      return [];
+    },
+
     xf: function(f, hash) {
-      var that = this;
-      var xf = function xf() { return f.apply(xf, arguments); };
+      var xf = function xf() { return f.apply(xf, arguments); }
+        , key;
       for (key in hash) {
         xf[key] = hash[key];
       }
@@ -103,11 +113,9 @@
     log: function() { // always call using (this, ...)
       var emitter = arguments[0];
       var classes = _.getClasses(emitter);
-      console.log("LOG",arguments, classes, logFilters);
-      if( u.logFilters.length == 0 || _.arrIntersect(classes, logFilters) ) {
+      if( u.logFilters.length === 0 || _.arrIntersect(classes, logFilters) ) {
         arguments[0] = classes[0] || emitter;
-        // arguments.shift();
-        console.log(Array.prototype.slice.call(arguments));
+        console.log(slice.call(arguments));
       }
     },
 
@@ -118,13 +126,13 @@
       if ('$className' in thing) { // ExtJS OOP-style
         classes[0] = thing['$className'];
         if ('superclass' in thing) {
-          classes = classes.concat(getClasses(thing['superclass']));
+          classes = classes.concat(getClasses(thing.superclass));
         }
       } else if ('CLASS_NAME' in thing) { // OpenLayers OOP-style
-        className = thing['CLASS_NAME'];
+        className = thing.CLASS_NAME;
         classes[0] = className;
         try {
-          var parent = eval(className+'.prototype.__proto__');
+          var parent = evil(className+'.prototype.__proto__');
           classes = classes.concat(getClasses(parent));
         } catch(err) {
           // do nothing
@@ -142,7 +150,7 @@
     },
 
     // https://gist.github.com/982883
-    uuid4: function b(a){return a?(a^Math.random()*16>>a/4).toString(16):([1e7]+-1e3+-4e3+-8e3+-1e11).replace(/[018]/g,b)},
+    uuid4: function b(a){return a?(a^Math.random()*16>>a/4).toString(16):([1e7]+-1e3+-4e3+-8e3+-1e11).replace(/[018]/g,b);},
 
     // String
     strJoin: function(arr, quote) {
@@ -157,10 +165,11 @@
       return result;
     },
 
+    // obj is an object constructed purely out of hash (object)
     traverse: function(obj, arrKeys, create) {
-      var n = obj, j = arrKeys.length, k, nn;
+      var i, n = obj, j = arrKeys.length, k, nn;
 
-      for (var i = 0; i < j; i++) {
+      for (i = 0; i < j; i++) {
         k = arrKeys[i];
         if (k in n) {
           nn = n[k];
@@ -179,11 +188,41 @@
       return n;
     },
 
+    // obj is an object constructed out of hash (object) and array
+    update2: function(obj, arrKeys, val, create) {
+      var i, n = obj, j = arrKeys.length, k, nn, k_1;
+
+      for (i = 0; i < j-1; i++) {
+        k = arrKeys[i];
+        if (k in n) {
+          nn = n[k];
+        } else {
+          nn = null;
+        }
+        if (!nn) {
+          if (!create) {
+            return null;
+          }
+          k_1 = arrKeys[i+1];
+          if (_.typeOf(k_1) == 'number') {
+            n[k] = [];
+          } else { // string
+            n[k] = {};
+          }
+          n = n[k];
+        } else {
+          n = nn;
+        }
+      }
+      n[arrKeys[j-1]] = val;
+      return obj;
+    },
+
     // read, update and remove interfaces to hash object
     // the obj will not be changed
     read: function(obj, arrKeys, defaultVal) {
       var n = _.traverse(obj, arrKeys);
-      if(n == null && defaultVal) {
+      if(n === null && defaultVal) {
         n = defaultVal;
       }
       return n;
@@ -193,7 +232,6 @@
       var len = arrKeys.length;
       var node = _.traverse(obj, arrKeys.slice(0, len-1), true); // create if not there
       var key = arrKeys[len-1];
-      if (node == null) return null;
       node[key] = val || 1;
       return node[key];
     },
@@ -209,20 +247,21 @@
       return false;
     },
 
-    add: function(object, item) {
-      if (!(item in object)) {
-        object[item] = 1;
+    add: function(obj, item) {
+      if (!(item in obj)) {
+        obj[item] = 1;
       }
-      return object;
+      return obj;
     },
 
     hashify: function(array, defaultVal) {
       var result = {};
-      _.each(_.flatten(array), function(value) {
-        result[value] = defaultVal || 1;
+      _.each(_.flatten(array), function(val) {
+        result[val] = defaultVal || 1;
       });
       return result;
     },
+
 
     arrayify: function(obj, keyField, valField) {
       var result = [];
@@ -264,13 +303,13 @@
     },
 
     isIntersect: function(thing1, thing2) {
-      return (typeOf(thing1) == 'array') ? arrIntersect(thing1, thing2) : objIntersect(thing1, thing2);
+      return (_.typeOf(thing1) === 'array') ? _.arrIntersect(thing1, thing2) : _.objIntersect(thing1, thing2);
     },
 
     // enhanced version of built-in concat
     // shallow copy
     concat: function(array) {
-      return array.concat(slice.call(arguments, 1))
+      return array.concat(slice.call(arguments, 1));
     },
 
     concatDeep: function() {
@@ -280,14 +319,17 @@
       _.each(arrays, function(array) {
         _.each(array, function(obj) { // each rows
           result[result.length] = _.cloneDeep(obj);
-        })
+        });
       });
+      return result;
     },
 
     cloneDeep: function fn(obj) {
-      var result = {}, val, type;
+      var result = {}, val, type = _.typeOf(obj), key;
 
-      for (var key in obj) {
+      if (type !== 'object' && type !== 'array')
+        return _.clone(obj);
+      for (key in obj) {
         val = obj[key];
         type = _.typeOf(val);
         if (type == 'object' || type == 'array') {
@@ -300,9 +342,9 @@
     },
 
     extendDeep: function fn(obj1, obj2) {
-      var val;
+      var key, val, type;
 
-      for (var key in obj2) {
+      for (key in obj2) {
         val = obj2[key];
         type = _.typeOf(val);
         if (type == 'object' ) {
@@ -320,14 +362,14 @@
 
     // shallow
     extendOnly: function(obj1, obj2, keys) {
-      return _extend(obj1, _.pick(obj2, keys));
+      return _.extend(obj1, _.pick(obj2, keys));
     },
 
     // shallow
-    extendExcept: function(obj1, obj2, noKeys) {
+    extendExcept: function(obj1, obj2, noKeys, deep) {
       var keys = _.difference(_.keys(obj2), noKeys);
-      each(keys, function(key, index) {
-        obj1[key] = obj2[key];
+      _.each(keys, function(key, index) {
+        obj1[key] = (deep) ? _.cloneDeep(obj2[key]) : obj2[key];
       });
       return obj1;
     },
@@ -348,23 +390,23 @@
         return getter;
       };
 
-      if (type == 'string') {
+      if (type === 'string' || type === 'number') {
         f = function(obj) {
           return (getter in obj) ? obj[getter] : null;
-        }
-      } else if (type == 'array') {
+        };
+      } else if (type === 'array') {
         f = function(obj) {
           return _.traverse(obj, getter);
-        }
-      } else if (type == 'function') {
+        };
+      } else if (type === 'function') {
         f = function(obj) {
           return getter(obj);
-        }
-      } else if (type == 'object') {
+        };
+      } else if (type === 'object') {
         if ('dojox.json.query' in getter) {
           f = function(obj) {
             return dojox.json.query(getter['dojox.json.query'], obj);
-          }
+          };
         }
       }
       return f;
@@ -374,20 +416,20 @@
       var type, f;
 
       type = _.typeOf(setter);
-      if (type == 'string') {
+      if (type == 'string'  || type === 'number') {
         f = function(obj, value) {          
           obj[setter] = value;
           return value;
         };
       } else if (type == 'array') {
         f = function(obj, value) {
-          _.update1(obj, setter, value)
+          _.update1(obj, setter, value);
           return value;
-        }
+        };
       } else if (type == 'function') {
-        f = function(obj, value) {
-          return setter(obj, value);
-        }
+        f = function(obj, value, objSrc) {
+          return setter(obj, value, objSrc);
+        };
       } else {
         f = function(obj, value) {
           obj[setter] = value;
@@ -400,54 +442,54 @@
     /**
      * Uninspiring if-else, but having closure is faster than injection
      */
-    valuerx: function(value, flag) {
-      var type = typeOf(value);
+    valuerx: function(value, exact) {
+      var type = _.typeOf(value);
       var f = function(val) {
         // default is exact match
         return _.isEqual(value, val);
       };
 
-      if (type == 'string') {
+      if (type == 'string' || type === 'number') {
         f = function(val) {
-          return (val == value);
-        }
-      } else if (type == 'array') {
+          return (val === value);
+        };
+      } else if (type === 'array') {
         f = function(val) {
-          return (_.indexOf(value, val) != -1);
-        }
-        if (!flag) { // partial
+          return _.isEqual(value, val);
+        };
+        if (!exact) { // partial match
           f = function(val) {
-            if (_.typeOf(val) == 'array') {
+            if (_.typeOf(val) === 'array') {
               return _.intersects(value, val);
             } else {
               return (_.indexOf(value, val) != -1);
             }
-          }
+          };
         }
       } else if (type == 'function') {
         f = function(val) {
           return value(val);
-        }
+        };
       } else if (type == 'regexp') {
         f = function(val) {
           try {
             return val.match(value);
           } catch(err) {
-            return false
+            return false;
           }
         };
       } else if (type == 'object') {
-        if (!flag) {
+        if (!exact) {
           f = function(val) {
             return _.isIntersect(value, val);
-          }
+          };
         }
       }
       return f;
     },
 
-    transfunction: function(qualifiers, kinds, flag) {
-      var fs = [], q, f, k, fx, k2, l;
+    transfunction: function(qualifiers, kinds) {
+      var fs = [], q, f, k, fx, k2, l, exact;
 
       for (var i = 0, j = qualifiers.length; i < j; i++) { // applied in sequence
         q = qualifiers[i];
@@ -458,7 +500,8 @@
           fx = _[k+'x'];
           // e.g. if setter is not specified use getter
           k2 = (k in q) ? k : 'getter';
-          f[k] = fx(q[k2], flag);
+          exact = ('exact' in q) ? q.exact : 1;
+          f[k] = fx(q[k2], exact);
         }
         fs[fs.length] = f;
       }
@@ -470,7 +513,7 @@
      *
      * @param {Object} obj Object to be match
      * @param {Object} cmatcher Complex matcher
-     * @param {Boolean} flag 1 for exact match otherwise
+     * @param {Boolean} exact 1 for exact match otherwise
      *   use partial match
      *
      * Complex matcher:
@@ -483,57 +526,175 @@
      * ]
      *
      */
-    matcherx: function(matchers, flag) {
-      return _.transfunction(matchers, ['getter', 'valuer'], flag);
+    matcherx: function(matchers) {
+      return _.transfunction(matchers, ['getter', 'valuer']);
     },
 
-    accessorx: function(accessors, flag) {
-      return _.transfunction(accessors, ['getter'], flag);
+    extractorx: function(extractors) {
+      return _.transfunction(extractors, ['getter']);
     },
 
-    translatorx: function(translators, flag) {
-      return _.transfunction(translators, ['getter', 'setter'], flag);
+    translatorx: function(translators) {
+      return _.transfunction(translators, ['getter', 'setter']);
     },
 
-    /**
-     * Return an array of values based on matcher's object
-     * No clone.
-     *
-     * @param {Object} rows Array of objects
-     * @param {Object} matchers Complex matchers
-     * @param {Boolean} flag 1 for using isEqual (exact match) otherwise
-     *   use isIntersect (partial match)
-     *
-     */
+    match1: function(obj, matcherfs, all) {
+      var matcherf, i, j, matchCount = 0;
 
-    match3: function(rows, matchers, flag) {
-      var result = _.isArray(rows) ? []: {};
-      var matcherfs = matcherx(matchers, flag);
-
-      _.each(rows, function(row, index) {
-        if (match(row, matcherfs, flag)) {
-          result[index] = row;
-        }
-      });
-      return result;
-    },
-
-    match2: function(obj, matcherfs, flag) {
-      var matcherf;
-
-      for (var i = 0, j = matcherfs.length; i < j; i++) {
+      for (i = 0, j = matcherfs.length; i < j; i++) {
         matcherf = matcherfs[i];
         if (matcherf.valuer(matcherf.getter(obj))){
-          if (!flag) { // or
+          matchCount++;
+          if (!all) { // either
             return true;
           }
         } else {
-          if (flag) { // all
+          if (all) { // all
             return false;
           }
         }
       }
-      return true;
+      if (all) return (matchCount === j);
+      else return (matchCount > 0);
+    },
+
+    /**
+     * Return an array of values based on extractor functions
+     *
+     * @param {Object} object An object
+     * @param {Object} extractorfs extractor functions
+     */
+    extract1: function(obj, extractorfs) { 
+      var result = []
+        , extractorf, i, j;
+
+      for (i = 0, j = extractorfs.length; i < j; i++) {
+        extractorf = extractorfs[i];
+        result[result.length] = extractorf.getter(obj);
+      }
+      return result;
+    },
+
+    /**
+     * Return a new object from an object translated based on translator functions
+     *
+     * @param {Object} object1 A source object
+     * @param {Object} object2 A destination object
+     * @param {Object} translatorfs translator functions
+     */
+    translate1: function(obj1, obj2, translatorfs) { 
+      var translatorf, i, j;
+
+      if (!obj2) obj2 = {};
+
+      for (i = 0, j = translatorfs.length; i < j; i++) {
+        translatorf = translatorfs[i];
+        try {
+          translatorf.setter(obj2, translatorf.getter(obj1), obj1);
+        } catch (err) {
+          _.log(_, 'TranslateError', err);
+          return obj2;
+        }
+      }
+      return obj2;
+    },
+
+    cull: function(obj, getter) {
+      return _.getterx(getter)(obj);
+    },
+
+    match: function(obj, matchers) {
+      return _.match1(obj, _.matcherx(matchers));
+    },
+
+    extract: function(obj, extractors) {
+      return _.extract1(obj, _.extractorx(extractors));
+    },
+
+    translate: function(obj, translators) {
+      return _.translate1(obj, {}, _.translatorx(translators));
+    },
+
+    pluck3: function(rows, getter) {
+      var result = _.isArray(rows) ? []: {}
+        , f = _.getterx(getter);
+      
+      _.each(rows, function(row, index) {
+        result[index] = f(row);
+      });
+      return result;
+    },
+
+    grab3: function(rows, getters) {
+      // shallow flatten
+      var getterArgs = _.flatten(slice.call(arguments, 1), true)
+        , extractors = [];
+      
+      _.each(getterArgs, function(getter) {
+        extractors[extractors.length] = { 'getter': getter };
+      });
+      return _.extract3(rows, extractors);
+    },
+
+    pick3: function(rows, keys) {
+      var result = _.isArray(rows) ? []: {}
+        , keyArgs = slice.call(arguments, 1);
+      _.each(rows, function(row, index) {
+        result[index] = _.pick(row, keyArgs);
+      });
+      return result;
+    },
+
+    /**
+     * cull: object -> value
+      pick: object -> object
+     * pluck: rows of collections -> array of arrays
+     * translate: rows of collections -> rows of collections
+     * cull: rows of collections -> rows of collections
+
+      
+     */
+    /**
+     * Return an array of values based on getter
+     *
+     * @param {Object} rows Array of objects
+     * @param {Object} extractors Accessors
+     */
+    extract3: function(rows, extractors) {
+      var result = _.isArray(rows) ? []: {};
+      var extractorfs = _.extractorx(extractors);
+      _.each(rows, function(row, index) {
+        result[index] = _.extract1(row, extractorfs);
+      });
+      return result;
+    }
+
+  , match3: function(rows, matchersOrObject, exact) {
+      return (_.isArray(matchersOrObject)) ?
+        matchMatchers(rows, matchersOrObject, exact) :
+        matchObject(rows, matchersOrObject, exact);
+    }
+    /**
+     * Return an array of row based on matcher's object
+     * The row is not cloned.
+     *
+     * @param {Object} rows Collection of objects
+     * @param {Array} matcher Complex matcher
+     * @param {Boolean} exact 1 for all
+     *
+     */
+
+  , matchMatchers: function(rows, matchers, exact) {
+      var isArray = _.isArray(rows)
+        , result = (isArray) ? []: {}
+        , matcherfs = _.matcherx(matchers, exact);
+
+      _.each(rows, function(row, index) {      
+        if (_.match1(row, matcherfs, exact)) {          
+          result[(isArray) ? result.length : index] = row;
+        }
+      });
+      return result;
     },
 
     /**
@@ -542,66 +703,21 @@
      *
      * @param {Object} rows Array of objects
      * @param {Object} obj an object (key-value pairs) {"name": "john", "age": 27}
-     * @param {Boolean} flag 1 for using isEqual (exact match) otherwise
+     * @param {Boolean} exact 1 for using isEqual (exact match) otherwise
      *   use isIntersect (partial match)
      *
      */
-    match1: function(rows, obj, flag) {
-      var result = [];
+    matchObject: function(rows, obj, exact) {
+      var isArray = _.isArray(rows)
+        , result = (isArray) ? []: {};
 
-      _.each(rows, function(row) {
-        if (( flag && _.isEqual(row, obj)) ||
-               _.isIntersect(row, obj)) {
-          result[result.length] = row;
-        }
-      });
-      return result;
-    },
-
-    access: function(obj, accessorfs) { // similar to pluck
-      var result = [];
-      var accessorf, value;
-
-      for (var i = 0, j = accessorfs.length; i < j; i++) {
-        accessorf = accessorfs[i];
-        result[result.length] = accessorf.getter(obj);
-      }
-      return result;
-    },
-
-    /**
-     * Return an array of values based on getter
-     *
-     * @param {Object} rows Array of objects
-     * @param {Object} accessors getter of an object
-     */
-    pluck3: function(rows, accessors) {
-      var result = _.isArray(rows) ? []: {};
-      var accessorfs = _.accessorx(accessors);
       _.each(rows, function(row, index) {
-        result[index] = _.access(row, accessorfs);
+        if ( (exact && _.isEqual(row, obj)) ||
+              (!exact && _.isIntersect(row, obj)) ) {
+          result[(isArray) ? result.length : index] = row;
+        } 
       });
       return result;
-    },
-
-    pluck2: function(obj, accessors, flag) {
-      return _.access(obj, accessorx(accessors), flag);
-    },
-
-    translate: function(obj1, obj2, translatorfs) { // similar to pick
-      var translatorf;
-      if (!obj2) obj2 = {};
-
-      for (var i = 0, j = translatorfs.length; i < j; i++) {
-        translatorf = translatorfs[i];
-        try {
-          translatorf.setter(obj2, translatorf.getter(obj1), obj1);
-        } catch (err) {
-          console.log('translate.error', err);
-          return obj2;
-        }
-      }
-      return obj2;
     },
 
     /**
@@ -619,48 +735,25 @@
      * @param {Object} pickers List of picker objects
      */
     translate3: function(rows, translators) {
-      var result = _.isArray(rows) ? []: {}, obj2;
+      var result = _.blankOf(rows);
       var translatefs = _.translatorx(translators);
       _.each(rows, function(row, index) {
-        result[index] = _.translate(row, {}, translatefs);
-      });
-      return result;
-    },
-
-    // return an array of object of certain key
-    // shallow
-    pick3: function(rows, getters) {
-      var l = getters.length, t;
-      var translators = _.clone(getters);
-      while(l--) {
-        t = translators[l];
-        t.setter = t.getter;
-      }
-      return translate3(rows, translators);
-    },
-
-    pick2: function(obj, translators) {
-      return _.translate(obj, {}, translatorx(translators), flag);
-    },
-
-    pick1: function(rows, arrKeys) {
-      var result = _.isArray(rows) ? []: {};
-      _.each(rows, function(row, index) {
-        result[index] = _.pick(row, arrKeys);
+        result[index] = _.translate1(row, {}, translatefs);
       });
       return result;
     },
 
     // construct a new array of object with certain keys
     // keypairs = [ ["1", "2"] ]
-
     // shallow
-    rekey2: function(rows, keys, newKeys) {
+    mapKey3: function(rows, keys, newKeys, filter, deep) {
       var result = _.isArray(rows) ? []: {};
-      var newRow;
 
       _.each(rows, function(row, index) {
         var newRow = {};
+        if (!filter) {
+          _.extendExcept(newRow, row, keys, deep);
+        } 
         _.each(keys, function(key, index) {
           if (key in row) newRow[(newKeys) ? newKeys[index] : key] = row[key];
         });
@@ -669,25 +762,6 @@
       return result;
     },
 
-    /**
-     * Deepen shallow iterator-based functions
-     * (applicable to underscore's min, max, sortBy, groupBy)
-     *
-     * @param {Function} func underscore's function
-     * @param {Object} rows Array of objects
-     * @param {Object} getter getter of an object
-     *
-     * @return {Object} Whatever func returns
-     *
-     * Example:
-     *
-     * groupBy3 <==> deepen(_.groupBy, rows, getter)
-     *
-     */
-    deepen: function(func, rows, getter) {
-      var f = _.getterx(getter);
-      return func(rows, function(row){ return f(row); });
-    },
 
     /**
      * Union of two collections based on the uniqueness of getter's value
@@ -712,34 +786,47 @@
      */
 
     union3: function(rows1, rows2, getter, shallow) {
-      var concatf = (shallow) ? concat : _.concatDeep;
-      var clonef = (shallow) ? _.clone : _.cloneDeep;
-
-      var f = _.getterx(getter);
-      var results = concatf(rows1);
+      var concatf = (shallow) ? _.concat : _.concatDeep
+        , clonef = (shallow) ? _.clone : _.cloneDeep
+        , f = _.getterx(getter)
+        , result = concatf(rows1)
+        , values = {};
 
       _.each(rows2, function(row, index) {
-        if (f(row) in values) return; // skip
-        results[index] = _.clone(row);
+        var val = f(row);
+        if (val in values) return;
+        values[val] = 1;        
+        result[result.length] = clonef(row);
       });
-      return results;
+      return result;
     },
 
-    unique3: function(rows, translators, shallow) {
-      var clonef = (shallow) ? _.clone : _.cloneDeep;
+    /*
+      resultVal array -> translators
+      resultVal null -> use value of getter
+      resultVal 'object' -> copy the whole object
+    */
+    unique3: function(rows, getter, resultVal, shallow) {
+      var clonef = (shallow) ? _.clone : _.cloneDeep
+        , f = _.getterx(getter), valuef, translatefs
+        , result = {};
 
-      var f = _.getterx(getter);
-      var translatefs = _.translatorx(translators);
-      var values = {};
-      var results = [];
+      if (resultVal === null) {
+        valuef = function () { return 1; };
+      } else if (resultVal === 'object') {
+        valuef = function (row) { return clonef(row); };
+      } else  {
+        translatefs = _.translatorx(resultVal);
+        valuef = function (row) { return  _.translate(row, {}, translatefs); };
+      }
 
-      _.each(rows, function(row, index) {
-        result[index] = _.translate(row, {}, translatefs);
-        if (f(row) in values) return; // skip
-        results[results.length] = clonef(row);
+      _.each(rows, function (row) {
+        var key = f(row);
+        if (key in result) return;
+        result[key] = valuef(row);
       });
-      return results;
-    },
+      return result;
+    }
 
     /**
      * Splits rows into groups of rows (objects),
@@ -750,22 +837,42 @@
      * shallow
 
      */
-    groupBy3: function(rows, getter) {
+  , groupBy3: function(rows, getter) {
       var f = _.getterx(getter);
       return _.groupBy(rows, function(row){ return f(row); });
-    },
+    }
+
+    /**
+     * Map for rows
+     * based on the value of getter
+     *
+     * @param {Object} rows Collection of collections
+     * @param {Object} getter
+     * @param {Function} iterator
+     */
+  , map3: function(rows, getter, iterator) {
+      var f = _.getterx(getter)
+        , result = _.isArray(rows) ? []: {};
+
+      _.each(rows, function (row, index) {
+        var val = f(row);
+        result[index] = iterator(val, index, row);
+      });
+      return result;
+    }
 
     /**
      * Generate a tally for rows,
-     * based on the value of object[key]
+     * based on the value of getter
      *
-     * @param {Object} rows Array of objects
-     * @param {String} key
+     * @param {Object} rows Collection of collections
+     * @param {Object} getter
      */
-    tally3: function(rows, getter) {
-      var f = _.getterx(getter);
-      var tally = {};
-      _.each(rows, function(row) {
+  , tally3: function (rows, getter) {
+      var f = _.getterx(getter)
+        , tally = {};
+
+      _.each(rows, function (row) {
         var val = f(row);
         if (val in tally) {
           tally[val]++;
@@ -774,6 +881,47 @@
         }
       });
       return tally;
+    }
+
+  , hashify3: function(rows, getter, defaultVal) {
+      var f = _.getterx(getter)
+        , result = {};
+
+      _.each(rows, function (row, index) {
+        var val = f(row);
+        result[val] = defaultVal || row;
+      });
+      return result;
+    }
+
+    /**
+     * Deepen shallow iterator-based functions
+     * (applicable to underscore's min, max, sortBy, groupBy)
+     *
+     * @param {Function} func underscore's function
+     * @param {Object} rows Array of objects
+     * @param {Object} getter getter of an object
+     *
+     * @return {Object} Whatever func returns
+     *
+     * Example:
+     *
+     * groupBy3 <==> deepen(_.groupBy, rows, getter)
+     *
+     */
+  , deepen: function(func, rows, getter) {
+      var f = _.getterx(getter);
+      return func(rows, function(row){ return f(row); });
+    }
+
+  , deepenUnderscore: function () {
+      var fs = [ 'max', 'min', 'sortBy' ];
+      
+      _.each(fs, function (fname) {
+        _[name+'3'] = function(rows, getter) {
+          _.deepen(_[name], rows, getter);
+        };
+      });
     }
   }); // end mixin
 
