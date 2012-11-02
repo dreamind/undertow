@@ -11,49 +11,52 @@
  * ExtJS (optional)
  * OpenLayers (optional)
  *
- * functions end with x: generate function with closure
- * functions end with 2: enhanced versions of underscore
- * functions end with 3: supports 'rows' of data in the following form
- *
- * [ {obj1}, {obj2} ] or { key1: {obj1}, key2: {obj2} }
+ * functions end with x: generate getter/setter/valuer function with closure
+ * functions end with 3: supports 'rows-like' of data in the following forms:
+ *  [ {obj1}, {obj2} ] or { key1: {obj1}, key2: {obj2} }
  *
  */
 
-
-(function() {// start enclosure
+(function () {// start enclosure
 
   // Repeated from underscore.js
   // ---------------------------
   // Save bytes in the minified (but not gzipped) version:
   // Create quick reference variables for speed access to core prototypes.
+
   var slice = Array.prototype.slice
     , evil = eval
     , _, u;
 
-  if (typeof exports !== 'undefined') { // node js environment
+  if (typeof exports !== 'undefined') {
+    // node js environment
     _ = require('underscore');
     if (typeof module !== 'undefined' && module.exports) {
-      exports = _;
       module.exports = _;
     }
     exports._ = _;
-  } else { // in browser
+  } else {
+    // in browser
     _ = window._;
     if (!_) { // underscore not included
       console.log('underscore.js must be included');
-      return;
+      throw new Error('underscore.js is not defined');
     }    
   }
 
+  // define internal reference
   u = _.undertow = {};
-  u.logFilters = [];
+  // undertow's statics
+  _.extend(u, {
+    logFilters: []
+  });
 
   _.mixin({
 
-    // high-level typeOf
-    // based on http://javascript.crockford.com/remedial.html
     /**
-     *
+     * Provide high-level typeof
+     * based on http://javascript.crockford.com/remedial.html
+     *   
      * boolean: true | false
      * array: [1, 2, {4: 5}]
      * object: {name: john, scores: [90, 80]}
@@ -63,12 +66,12 @@
      * function: function() {}
      * string: 'text' or "word"
      * regexp: /abc.+/
+     * iterator
      *
      */
-
-    typeOf: function(thing) {
-
+    typeOf: function (thing) {
       var type = typeof thing;
+
       if (type === 'object') {
         if (thing) {
           if (thing instanceof Array) {
@@ -83,10 +86,9 @@
         }
       }
       return type;
-    },
+    }
 
-
-    blankOf: function (thing) {
+  , blankOf: function (thing) {
       var constructor = thing.constructor
         , type = _.typeOf(constructor);
 
@@ -95,47 +97,41 @@
           return new constructor();        
       }
       return [];
-    },
+    }
 
-    xf: function(f, hash) {
+    /**
+     * Injecting hash into a function
+     *
+     */
+  , xf: function (f, hash) {
       var xf = function xf() { return f.apply(xf, arguments); }
         , key;
       for (key in hash) {
+        // asssume hash is a plain JS object
         xf[key] = hash[key];
       }
       return xf;
     },
 
-    logSetFilter: function(filters) {
-      u.logFilters = filters;
-    },
-
-    log: function() { // always call using (this, ...)
-      var emitter = arguments[0];
-      var classes = _.getClasses(emitter);
-      if( u.logFilters.length === 0 || _.arrIntersect(classes, logFilters) ) {
-        arguments[0] = classes[0] || emitter;
-        console.log(slice.call(arguments));
-      }
-    },
-
     getClasses: function getClasses(thing) {
-      if (_.typeOf(thing) != 'object')
+      if (_.typeOf(thing) !== 'object')
         return [];
-      var classes = [], className;
-      if ('$className' in thing) { // ExtJS OOP-style
-        classes[0] = thing['$className'];
-        if ('superclass' in thing) {
+      var classes = [], className, parent;
+      className = thing['$className'];
+      if (className) { // ExtJS' OOP-style
+        classes[0] = className;
+        if (thing.superclass) {
           classes = classes.concat(getClasses(thing.superclass));
         }
-      } else if ('CLASS_NAME' in thing) { // OpenLayers OOP-style
-        className = thing.CLASS_NAME;
+      }
+      className = thing.CLASS_NAME;
+      if (className) { // OpenLayers' OOP-style        
         classes[0] = className;
         try {
-          var parent = evil(className+'.prototype.__proto__');
+          parent = evil(className + '.prototype.__proto__');
           classes = classes.concat(getClasses(parent));
         } catch(err) {
-          // do nothing
+          throw new TypeError('Failed to access class prototype');
         }
       }
       return classes;
@@ -149,29 +145,31 @@
       };
     },
 
+    logSetFilter: function(filters) {
+      u.logFilters = filters;
+    },
+    
+    log: function(obj) {
+      // logger should be an object
+      if (typeof obj !== 'object') return;
+
+      var classes = _.getClasses(obj);
+      if (u.logFilters.length === 0 || _.arrIntersect(classes, u.logFilters)) {
+        arguments[0] = classes[0] || obj;
+        console.log(slice.call(arguments));
+      }
+    },
+
     // https://gist.github.com/982883
     uuid4: function b(a){return a?(a^Math.random()*16>>a/4).toString(16):([1e7]+-1e3+-4e3+-8e3+-1e11).replace(/[018]/g,b);},
 
-    // String
-    strJoin: function(arr, quote) {
-      var result = '', len = arr.length;
-
-      for (var i = 0; i < len; i++) {
-        result += quote + arr[i] + quote;
-        if (i < len-1) {
-          result += ",";
-        }
-      }
-      return result;
-    },
-
-    // obj is an object constructed purely out of hash (object)
+    // obj is either JS hash or array
     traverse: function(obj, arrKeys, create) {
       var i, n = obj, j = arrKeys.length, k, nn;
 
       for (i = 0; i < j; i++) {
         k = arrKeys[i];
-        if (k in n) {
+        if (n[k]) {
           nn = n[k];
         } else {
           nn = null;
@@ -188,13 +186,12 @@
       return n;
     },
 
-    // obj is an object constructed out of hash (object) and array
     update2: function(obj, arrKeys, val, create) {
       var i, n = obj, j = arrKeys.length, k, nn, k_1;
-
+      
       for (i = 0; i < j-1; i++) {
         k = arrKeys[i];
-        if (k in n) {
+        if (n[k]) {
           nn = n[k];
         } else {
           nn = null;
@@ -204,7 +201,7 @@
             return null;
           }
           k_1 = arrKeys[i+1];
-          if (_.typeOf(k_1) == 'number') {
+          if (_.typeOf(k_1) === 'number') {
             n[k] = [];
           } else { // string
             n[k] = {};
@@ -387,12 +384,12 @@
     getterx: function(getter) {
       var type = _.typeOf(getter);
       var f = function(obj) {
-        return getter;
+        return obj;
       };
 
       if (type === 'string' || type === 'number') {
         f = function(obj) {
-          return (getter in obj) ? obj[getter] : null;
+          return (obj[getter]) ? obj[getter] : null;
         };
       } else if (type === 'array') {
         f = function(obj) {
@@ -419,12 +416,12 @@
       if (type == 'string'  || type === 'number') {
         f = function(obj, value) {          
           obj[setter] = value;
-          return value;
+          return obj;
         };
       } else if (type == 'array') {
         f = function(obj, value) {
-          _.update1(obj, setter, value);
-          return value;
+          _.update2(obj, setter, value, true);
+          return obj;
         };
       } else if (type == 'function') {
         f = function(obj, value, objSrc) {
@@ -433,7 +430,7 @@
       } else {
         f = function(obj, value) {
           obj[setter] = value;
-          return value;
+          return obj;
         };
       }
       return f;
@@ -616,13 +613,13 @@
     },
 
     pluck3: function(rows, getter) {
-      var result = _.isArray(rows) ? []: {}
+      var results = _.blankOf(rows)
         , f = _.getterx(getter);
       
       _.each(rows, function(row, index) {
-        result[index] = f(row);
+        results[index] = f(row);
       });
-      return result;
+      return results;
     },
 
     grab3: function(rows, getters) {
@@ -637,12 +634,12 @@
     },
 
     pick3: function(rows, keys) {
-      var result = _.isArray(rows) ? []: {}
-        , keyArgs = slice.call(arguments, 1);
+      var results = _.blankOf(rows)
+        , keyArgs = _.flatten(slice.call(arguments, 1));
       _.each(rows, function(row, index) {
-        result[index] = _.pick(row, keyArgs);
+        results[index] = _.pick(row, keyArgs);
       });
-      return result;
+      return results;
     },
 
     /**
@@ -661,12 +658,13 @@
      * @param {Object} extractors Accessors
      */
     extract3: function(rows, extractors) {
-      var result = _.isArray(rows) ? []: {};
-      var extractorfs = _.extractorx(extractors);
+      var results = _.blankOf(rows)
+        , extractorfs = _.extractorx(extractors);
+
       _.each(rows, function(row, index) {
-        result[index] = _.extract1(row, extractorfs);
+        results[index] = _.extract1(row, extractorfs);
       });
-      return result;
+      return results;
     }
 
   , match3: function(rows, matchersOrObject, exact) {
@@ -686,15 +684,15 @@
 
   , matchMatchers: function(rows, matchers, exact) {
       var isArray = _.isArray(rows)
-        , result = (isArray) ? []: {}
+        , results = _.blankOf(rows)
         , matcherfs = _.matcherx(matchers, exact);
 
       _.each(rows, function(row, index) {      
-        if (_.match1(row, matcherfs, exact)) {          
-          result[(isArray) ? result.length : index] = row;
+        if (_.match1(row, matcherfs, exact)) {
+          results[(isArray) ? results.length : index] = row;
         }
       });
-      return result;
+      return results;
     },
 
     /**
@@ -709,15 +707,15 @@
      */
     matchObject: function(rows, obj, exact) {
       var isArray = _.isArray(rows)
-        , result = (isArray) ? []: {};
+        , results = _.blankOf(rows);
 
       _.each(rows, function(row, index) {
         if ( (exact && _.isEqual(row, obj)) ||
               (!exact && _.isIntersect(row, obj)) ) {
-          result[(isArray) ? result.length : index] = row;
+          results[(isArray) ? results.length : index] = row;
         } 
       });
-      return result;
+      return results;
     },
 
     /**
@@ -735,19 +733,19 @@
      * @param {Object} pickers List of picker objects
      */
     translate3: function(rows, translators) {
-      var result = _.blankOf(rows);
+      var results = _.blankOf(rows);
       var translatefs = _.translatorx(translators);
       _.each(rows, function(row, index) {
-        result[index] = _.translate1(row, {}, translatefs);
+        results[index] = _.translate1(row, {}, translatefs);
       });
-      return result;
+      return results;
     },
 
     // construct a new array of object with certain keys
     // keypairs = [ ["1", "2"] ]
     // shallow
     mapKey3: function(rows, keys, newKeys, filter, deep) {
-      var result = _.isArray(rows) ? []: {};
+      var results = _.blankOf(rows);
 
       _.each(rows, function(row, index) {
         var newRow = {};
@@ -757,9 +755,9 @@
         _.each(keys, function(key, index) {
           if (key in row) newRow[(newKeys) ? newKeys[index] : key] = row[key];
         });
-        result[index] = newRow;
+        results[index] = newRow;
       });
-      return result;
+      return results;
     },
 
 
@@ -785,47 +783,68 @@
      * union3(rows1, rows2, 'name') returns all rows
      */
 
-    union3: function(rows1, rows2, getter, shallow) {
-      var concatf = (shallow) ? _.concat : _.concatDeep
-        , clonef = (shallow) ? _.clone : _.cloneDeep
-        , f = _.getterx(getter)
-        , result = concatf(rows1)
-        , values = {};
-
-      _.each(rows2, function(row, index) {
-        var val = f(row);
-        if (val in values) return;
-        values[val] = 1;        
-        result[result.length] = clonef(row);
+    appendIf: function (rows, results, keyDict, keyf, valuef) {
+      _.each(rows, function(row) { // each rows
+        var key = keyf(row);
+        if (key in keyDict) return;
+        keyDict[key] = 1;        
+        results[results.length] = valuef(row, key);
       });
-      return result;
+    }
+
+  , clonex: function (depth) {
+      var f = function (obj) { return obj; };
+
+      switch(depth) {
+        case 0:
+          return f;
+        case 1:
+          return _.clone;
+        case 2:
+          return _.cloneDeep;
+      }
+      return f;
+    }
+
+  , union3: function (rowses, getter, depth) {
+      var clonef = _.clonex(depth) 
+        , getterf = _.getterx(getter)
+        , results = []
+        , keyDict = {};
+
+      _.each(rowses, function(rows) { // each rows
+        _.appendIf(rows, results, keyDict, getterf, clonef);
+      });
+      return results;
     },
 
     /*
-      resultVal array -> translators
-      resultVal null -> use value of getter
-      resultVal 'object' -> copy the whole object
+      resultVal number -> depth
+      resultVal 'key' -> use the key value
+      resultVal array -> translators      
+
     */
-    unique3: function(rows, getter, resultVal, shallow) {
-      var clonef = (shallow) ? _.clone : _.cloneDeep
-        , f = _.getterx(getter), valuef, translatefs
-        , result = {};
+    unique3: function(rows, getter, option) {
+      var getterf = _.getterx(getter), valuef, translatefs
+        , keyDict = {}
+        , results = []
+        , type = _.typeOf(option)
+        , clonef, setterf;
 
-      if (resultVal === null) {
-        valuef = function () { return 1; };
-      } else if (resultVal === 'object') {
+      if (type === 'number') { // option = 0, 1, 2
+        clonef = _.clonex(option);
         valuef = function (row) { return clonef(row); };
-      } else  {
-        translatefs = _.translatorx(resultVal);
-        valuef = function (row) { return  _.translate(row, {}, translatefs); };
-      }
-
-      _.each(rows, function (row) {
-        var key = f(row);
-        if (key in result) return;
-        result[key] = valuef(row);
-      });
-      return result;
+      } else if (option === 'key') {
+        setterf = _.setterx(getter);        
+        valuef = function (row, key) { return setterf({}, key); }; 
+      } else if (type === 'array') {
+        translatefs = _.translatorx(option);
+        valuef = function (row) { return _.translate1(row, {}, translatefs); };
+      } else {
+        valuef = function (row, key) { return key; }; 
+      }      
+      _.appendIf(rows, results, keyDict, getterf, valuef);
+      return results;
     }
 
     /**
@@ -852,13 +871,13 @@
      */
   , map3: function(rows, getter, iterator) {
       var f = _.getterx(getter)
-        , result = _.isArray(rows) ? []: {};
+        , results = _.blankOf(rows);
 
       _.each(rows, function (row, index) {
         var val = f(row);
-        result[index] = iterator(val, index, row);
+        results[index] = iterator(val, index, row);
       });
-      return result;
+      return results;
     }
 
     /**
@@ -885,12 +904,37 @@
 
   , hashify3: function(rows, getter, defaultVal) {
       var f = _.getterx(getter)
-        , result = {};
+        , results = {};
 
       _.each(rows, function (row, index) {
         var val = f(row);
-        result[val] = defaultVal || row;
+        results[val] = defaultVal || row;
       });
+      return results;
+    }
+
+    // String
+  , join3: function(arr, getter, quote, separator) {
+      var f = _.getterx(getter)
+        , qtype = _.typeOf(quote)
+        , result = '', i, j = arr.length, q0, q1;
+
+      if (quote === null || qtype === 'undefined') {
+        q0 = q1 = '"';
+      } else if (qtype === 'array') {
+        q0 = quote[0];
+        q1 = quote[1];
+      } else {
+        q0 = q1 = quote;
+      }
+      if (typeof separator === 'undefined' || separator === null) separator = ',';
+      
+      for (i = 0; i < j; i++) {
+        result += q0 + f(arr[i]) + q1;
+        if (i < j-1) {
+          result += separator;
+        }
+      }
       return result;
     }
 
@@ -909,18 +953,19 @@
      * groupBy3 <==> deepen(_.groupBy, rows, getter)
      *
      */
-  , deepen: function(func, rows, getter) {
-      var f = _.getterx(getter);
-      return func(rows, function(row){ return f(row); });
+  , deepen: function(func) {
+
+      return function(rows, getter) {
+        var f = _.getterx(getter);
+        return func(rows, function (row) { return f(row); });
+      };
     }
 
-  , deepenUnderscore: function () {
-      var fs = [ 'max', 'min', 'sortBy' ];
+  , deepenUnderscore: function (fs) {
+      fs = fs || [ 'max', 'min', 'sortBy' ];
       
       _.each(fs, function (fname) {
-        _[name+'3'] = function(rows, getter) {
-          _.deepen(_[name], rows, getter);
-        };
+        _[name+'3'] = _.deepen(_[name]);
       });
     }
   }); // end mixin

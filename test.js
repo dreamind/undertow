@@ -58,11 +58,23 @@ describe('undertow', function(){
     });
   });
 
-  describe('#strJoin()', function() {
-    it('should return joined string', function(){
-      assert.equal(_.strJoin(['1','2','3'], '"'), '"1","2","3"');
-      assert.equal(_.strJoin(['1','2','3'], ''), '1,2,3');
-      assert.equal(_.strJoin(['1','2','3'], "'"), "'1','2','3'");
+  describe('#join3()', function() {
+    it('should return joined string - double quote, default sep', function(){
+      assert.equal(_.join3(['1','2','3'], null, '"'), '"1","2","3"');
+    });
+    it('should return joined string - no quote, default sep', function(){
+      var rows = [
+            ['josh', 7, 'male', {origin: 'id'}]
+          , ['luca', 8, 'male', {origin: 'it'}]
+          ];
+      assert.equal(_.join3(rows, [3, 'origin'], ['<', '>'], ':'), '<id>:<it>');
+    });
+    it('should return joined string - single quote, bar sep', function(){
+      var rows = [
+            { name: 'josh', age: 7 }
+          , { name: 'luca', age: 8 }
+          ];
+      assert.equal(_.join3(rows, 'age', "'", '|'), "'7'|'8'");
     });
   });
 
@@ -545,15 +557,13 @@ describe('undertow', function(){
             , last: 'posh'
             }
           }
-        ]
-      , matchers, exact; 
+        ]; 
 
     it('should matchMatcher a list 1', function() {
       var matchers = [
         {"getter": "age", "valuer": 8},
         {"getter": ["name", "last"], "valuer": ["posh", "caine"], "exact": 0 }
-      ], all;
-      all = 1;
+      ], all = 1;
       assert.deepEqual(_.matchMatchers(rows, matchers, all), [
         rows[1]
       ]);
@@ -820,5 +830,398 @@ describe('undertow', function(){
       assert.notStrictEqual(rows.josh.name, results.josh.name);
     });    
   });
+
+
+  describe('#union3()', function() { 
+    var rows1 = [
+          { id: 'josh', age: 7, sex: 'male',
+            name: {
+              first: 'josh'
+            , last: 'posh'
+            }
+          }
+        , { id: 'jane', age: 8, sex: 'female',
+            name: {
+              first: 'jane'
+            , last: 'caine'
+            }
+          }
+        ]
+      , rows2 = [
+          { id: 'senior', age: 88, sex: 'male',
+            name: {
+              first: 'josh'
+            , last: 'posh'
+            }
+          }
+        ];
+
+
+    it('should union3 with depth = 0', function(){
+      var depth = 0
+        , results = _.union3([rows1, rows2], ['name', 'first'], depth);
+      assert.deepEqual(rows1, results);
+      assert.strictEqual(rows1[0], results[0]);
+      assert.strictEqual(rows1[1], results[1]);
+
+    });    
+    it('should union3 with depth = 1', function(){
+      var depth = 1
+        , results = _.union3([rows1, rows2], ['sex'], depth);
+
+      assert.deepEqual([rows1[0], rows1[1]], results);
+      assert.strictEqual(rows1[0].name, results[0].name);
+    });   
+    it('should union3 with depth = 2', function(){
+      var depth = 2
+        , results = _.union3([rows1, rows2], 'id', depth);
+
+      assert.deepEqual([rows1[0], rows1[1], rows2[0]], results);
+      assert.deepEqual(rows2[0], results[2]);
+      assert.notStrictEqual(rows2[0].name, results[2].name);
+    });  
+
+  });
+
+  describe('#unique3()', function() { 
+    var rows = [
+          { id: 'josh', age: 7, sex: 'male',
+            name: {
+              first: 'josh'
+            , last: 'posh'
+            }
+          }
+        , { id: 'jane', age: 8, sex: 'female',
+            name: {
+              first: 'jane'
+            , last: 'caine'
+            }
+          }
+        , { id: 'senior', age: 88, sex: 'male',
+            name: {
+              first: 'josh'
+            , last: 'posh'
+            }
+          }
+        ];
+
+    it('should unique3 with option = 0', function(){
+      var option = 0
+        , results = _.unique3(rows, ['name', 'first'], option);
+      assert.deepEqual([rows[0], rows[1]], results);
+      assert.strictEqual(rows[0], results[0]);
+      assert.strictEqual(rows[1], results[1]);
+
+    });    
+    it('should unique3 with option = 1', function(){
+      var option = 1
+        , results = _.unique3(rows, ['sex'], option);
+
+      assert.deepEqual([rows[0], rows[1]], results);
+      assert.strictEqual(rows[0].name, results[0].name);
+    });   
+    it('should unique3 with option = 2', function(){
+      var option = 2
+        , results = _.unique3(rows, 'id', option);
+
+      assert.deepEqual(rows, results);
+      assert.deepEqual(rows[2], results[2]);
+      assert.notStrictEqual(rows[2].name, results[2].name);
+    });  
+
+    it('should unique3 with option = "key"', function(){
+      var option = 'key'
+        , results = _.unique3(rows, 'id', option);
+
+      assert.deepEqual([
+        { id: 'josh' }
+      , { id: 'jane' }
+      , { id: 'senior' }
+      ], results);
+    });
+
+    it('should unique3 with option = "key"', function(){
+      var option = 'key'
+        , results = _.unique3(rows, ['name', 'last'], option);
+
+      assert.deepEqual([
+        { name: { last: 'posh' } }
+      , { name: { last: 'caine' } }
+      ], results);
+    });
+
+    it('should unique3 with option = a translators', function(){
+      var option = [
+            { getter: 'id', setter: 'nick' }
+          , { getter: ['name', 'last'], setter: 'lastname' }
+          ]
+        , results = _.unique3(rows, 'id', option);
+
+      assert.deepEqual([
+        { nick: 'josh'
+        , lastname: 'posh'
+        }
+      , { nick: 'jane'
+        , lastname: 'caine'
+        }
+      , { nick: 'senior'
+        , lastname: 'posh'
+        }
+      ], results);
+    });
+
+    it('should unique3 with no option', function(){
+      assert.deepEqual(['male', 'female'], _.unique3(rows, 'sex'));
+    });
+
+
+  });
+
+
+  describe('#groupBy3()', function() { 
+    var rows = [
+          { id: 'josh', age: 7, sex: 'male',
+            name: {
+              first: 'josh'
+            , last: 'posh'
+            }
+          }
+        , { id: 'jane', age: 8, sex: 'female',
+            name: {
+              first: 'jane'
+            , last: 'caine'
+            }
+          }
+        , { id: 'lady', age: 88, sex: 'female',
+            name: {
+              first: 'jane'
+            , last: 'posh'
+            }
+          }
+        ];
+
+    it('should groupBy3 with getter array of keys', function(){
+      var results = _.groupBy3(rows, ['name', 'last']);
+
+      assert.deepEqual({
+          posh: [rows[0], rows[2]]
+        , caine: [rows[1]]
+        }
+      , results);
+    });
+
+    it('should groupBy3 with getter array of keys 2', function(){
+      var results = _.groupBy3(rows, ['name', 'last', 'length']);
+
+      assert.deepEqual({
+          4: [rows[0], rows[2]]
+        , 5: [rows[1]]
+        }
+      , results);
+    });    
+
+    it('should groupBy3 with getter function', function(){
+      var f = function (row) {
+            return (row.age < 30) ? '<30' : '>=30';
+          }
+        , results = _.groupBy3(rows, f);
+
+      assert.deepEqual({
+          '<30': [rows[0], rows[1]]
+        , '>=30': [rows[2]]
+        }
+      , results);
+    });    
+  });
+
+
+
+  describe('#map3()', function() { 
+      var rows = {
+          'josh': {
+            age: 7
+          , sex: 'male'
+          , name: {
+              first: 'josh'
+            , last: 'posh'
+            }
+          }
+        , 'jane': {
+            age: 8
+          , sex: 'female'
+          , name: {
+              first: 'jane'
+            , last: 'caine'
+            }
+          }
+        , 'senior': {
+            age: 88
+          , sex: 'male'
+          , name: {
+              first: 'josh'
+            , last: 'posh'
+            }
+          }
+        };
+   
+
+    it('should map3 with getter function', function(){
+      var getter = function (row) {
+            return (row.age > 65);
+          }
+        , iterator = function (val, index, row) {
+            return {
+              id: index
+            , fullname: row.name.first + ' ' + row.name.last
+            , retired:  val
+            };
+          }
+        , results = _.map3(rows, getter, iterator);
+
+      assert.deepEqual({
+          'josh': {
+            id: 'josh'
+          , fullname: 'josh posh'
+          , retired: false
+          }
+        , 'jane': {
+            id: 'jane'
+          , fullname: 'jane caine'
+          , retired: false
+          }
+        , 'senior': {
+            id: 'senior'
+          , fullname: 'josh posh'
+          , retired: true
+          }
+        }
+      , results);
+    });    
+  });
+
+
+  describe('#tally3()', function() { 
+      var rows = {
+          'josh': {
+            age: 7
+          , name: { first: 'josh', last: 'posh' }
+          }
+        , 'jane': {
+            age: 8
+          , name: { first: 'jane', last: 'caine' }
+          }
+        , 'senior': {
+            age: 88
+          , name: { first: 'josh', last: 'posh' }
+          }
+        };
+   
+
+    it('should tally3 with getter function', function(){
+      var getter = ['name', 'last']
+        , results = _.tally3(rows, getter);
+
+      assert.deepEqual({
+          'posh': 2
+        , 'caine': 1
+        }
+      , results);
+    });
+
+    it('should tally3 with getter function', function(){
+      var getter = function (row) {
+            return (row.age > 65) ? 'retiree' : 'non-retiree';
+          }
+        , results = _.tally3(rows, getter);
+
+      assert.deepEqual({
+          'retiree': 1
+        , 'non-retiree': 2
+        }
+      , results);
+    });    
+  });
+
+
+  describe('#hashify3()', function() { 
+      var rows = [
+          { nick: 'junior'
+          , age: 7
+          , name: { first: 'josh', last: 'posh' }
+          }
+        , { nick: 'lady'
+          , age: 8
+          , name: { first: 'jane', last: 'caine' }
+          }
+        , { nick: 'senior'
+          , age: 88
+          , name: { first: 'josh', last: 'posh' }
+          }
+        ];
+
+    it('should hashify3 with getter function', function(){
+      var getter = ['name', 'last']
+        , results = _.hashify3(rows, getter, 'exists');
+
+      assert.deepEqual({
+          'posh': 'exists'
+        , 'caine': 'exists'
+        }
+      , results);
+    });
+
+    it('should tally3 with getter function', function(){
+      var getter = function (row) {
+            return row.name.first + ' "' + row.nick + '" ' + row.name.last
+          }
+        , results = _.hashify3(rows, getter);
+
+      assert.deepEqual({
+          'josh "junior" posh': rows[0]
+        , 'jane "lady" caine': rows[1]
+        , 'josh "senior" posh': rows[2]
+        }
+      , results);
+    });    
+  });
+
+
+  describe('#deepen()', function() { 
+    var rows = [
+          { id: 'josh', age: 7, sex: 'male',
+            name: {
+              first: 'josh'
+            , last: 'posh'
+            }
+          }
+        , { id: 'jane', age: 8, sex: 'female',
+            name: {
+              first: 'jane'
+            , last: 'caine'
+            }
+          }
+        , { id: 'lady', age: 88, sex: 'female',
+            name: {
+              first: 'jane'
+            , last: 'posh'
+            }
+          }
+        ];
+
+    it('should deepen groupBy', function(){
+      var myGroupBy3 = _.deepen(_.groupBy)
+        , results1 = myGroupBy3(rows, ['name', 'last'])
+        , results2 = _.groupBy3(rows, ['name', 'last']);
+      assert.deepEqual(results1, results2);
+    });
+
+    it('should deepen sortBy', function(){
+      var mySortBy3 = _.deepen(_.sortBy)
+        , results = mySortBy3(rows, ['name', 'last']);
+      assert.deepEqual([rows[1], rows[0], rows[2]], results);
+    });
+  
+  });
+
 
 });
