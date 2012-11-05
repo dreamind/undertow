@@ -50,5 +50,44 @@ $(document).ready(function() {
     deepEqual(_.getClasses(filter), ["OpenLayers.Filter.Comparison", "OpenLayers.Filter"], 'test OpenLayers object');
   });
 
+/*  , matchMatchers: function (rows, matchers, flag) {
+      var isArray = _.isArray(rows)
+        , result = (isArray) ? []: {}
+        , matcherfs = matcherx(matchers, flag);
+
+      _.each(rows, function (row, index) {      
+        if (match1(row, matcherfs, flag)) {          
+          result[(isArray) ? result.length : index] = row;
+        }
+      });
+      return result;
+    },
+
+    /**
+     * Perform complex matching
+     *
+     * @param {Object} obj Object to be match
+     * @param {Object} cmatcher Complex matcher
+     * @param {Boolean} flag 1 for exact match otherwise
+     *   use partial match
+     *
+     * Complex matcher:
+     *
+     * [ { getter: "age", valuer: 24},
+     *   { getter: ["name", "last"], valuer: ["doe", "lee"] },
+     *   { getter: "prop", valuer: {object} },
+     *   { getter: { 'dojox.json.query': '$.email.[0]' } , valuer: /.+@gmail.com/},
+     *   { getter: { 'dojox.json.query': '$.x.y' } , valuer: function (value) {} },
+     * ]
+     *
+     */
+
+     /* Translators:
+     *
+     * [ { getter: "age" },
+     *   { getter: ["name", "last"], "setter": "lastname" },
+     *   { getter: { 'dojox.json.query': '$.email.[0]' } , "setter": ["email", "first"] },
+     *   { getter: { 'dojox.json.query': '$.x.y' } , "setter": function (object, value) {} },
+     * ]*/
 
 });
