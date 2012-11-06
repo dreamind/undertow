@@ -584,15 +584,6 @@
       return _.translate1(obj, {}, _.translatorx(translators));
     }
 
-    /**
-     * cull: object -> value
-      pick: object -> object
-     * pluck: rows of collections -> array of arrays
-     * translate: rows of collections -> rows of collections
-     * cull: rows of collections -> rows of collections
-
-      
-     */
   , pluck3: function (rows, getter) {
       var results = _.blankOf(rows)
         , f = _.getterx(getter);
@@ -651,7 +642,7 @@
      * [ {"getter": "age", "valuer": 24},
      *   {"getter": ["name", "last"], "valuer": ["doe", "lee"] },
      *   {"getter": "prop", "valuer": {object} },
-     *   {"getter": { 'dojox.json.query': '$.email.[0]' } , "valuer": /.+@gmail.com/},
+     *   {"getter": { 'dojox.json.query': '$.email[0]' } , "valuer": /.+@gmail.com/},
      *   {"getter": { 'dojox.json.query': '$.x.y' } , "valuer": function (value) {} },
      * ]
      */
@@ -710,7 +701,7 @@
      *
      * [ {"getter": "age" },
      *   {"getter": ["name", "last"], "setter": "lastname" },
-     *   {"getter": { 'dojox.json.query': '$.email.[0]' } , "setter": ["email", "first"] },
+     *   {"getter": { 'dojox.json.query': '$.email[0]' } , "setter": ["email", "first"] },
      *   {"getter": { 'dojox.json.query': '$.x.y' } , "setter": function (object, value) {} },
      * ]
      *
