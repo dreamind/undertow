@@ -163,6 +163,109 @@
     // https://gist.github.com/982883
   , uuid4: function b(a){return a?(a^Math.random()*16>>a/4).toString(16):([1e7]+-1e3+-4e3+-8e3+-1e11).replace(/[018]/g,b);}
 
+  , strxml: function (xmlString) {
+      var xmlDoc, parser;
+
+      if (window.DOMParser) {
+        parser = new DOMParser();
+        xmlDoc = parser.parseFromString(xmlString, "text/xml");
+      } else {// Internet Explorer
+        xmlDoc = new ActiveXObject("Microsoft.XMLDOM");
+        xmlDoc.async = false;
+        xmlDoc.loadXML(xmlString);
+      }
+      return xmlDoc;
+    }
+
+  , strrepeat: function (pattern, count) {
+      // http://stackoverflow.com/questions/202605/repeat-string-javascript
+
+      var result = '';
+      while (count > 0) {
+        if (count & 1) result += pattern;
+        count >>= 1;
+        pattern += pattern;
+      }
+      return result;
+    }
+
+  , numberFormat: function (min, max) {
+      var numStr, dot, diff, fraction, nonzero;
+      // 0.932910065, 1.045305964
+
+      try {
+        numStr = min.toString();
+        dot = numStr.indexOf('.');
+        if (dot === -1) { // no dot
+           fraction = 0;
+        } else {
+          fraction = numStr.length-dot-1;
+        }
+        diff = (max - min);
+        nonzero = -2;        
+        while (diff < 100) {
+          diff *= 10;
+          nonzero++;
+        }
+        nonzero += 2; // increase by two
+
+        if (nonzero === 0) { //  diff in hundreds
+           return '0';   
+        } else if (nonzero > fraction) {
+          fraction = nonzero;
+        } else if (fraction - nonzero > 2) {
+          if (fraction > 2 && nonzero <= 1) {
+            fraction = 2;
+          } else {
+            fraction = nonzero;
+          }          
+        }
+        if (fraction < 1 ) {
+          fraction = 1;
+        }
+        return '0.' + _.strrepeat('0', fraction);
+      } catch(err) {
+
+      }      
+      return '0.00';
+    }
+
+  , tablize: function (obj) {
+      var html = '<table>', prop;
+  
+      for (prop in obj) {
+        html += '<tr><td>' + prop.toString() + '</td>';
+        html += '<td>' + obj[prop].toString() + '</td></tr>';
+      }
+      html += '</table>';
+      return html;
+    }
+
+  , strjoin: function (arr, getter, quote, separator) {
+      var f = _.getterx(getter)
+        , qtype = _.typeOf(quote)
+        , q0, q1
+        , result = '', i, j = arr.length;
+
+      if (quote === null || qtype === 'undefined') {
+        q0 = q1 = '"';
+      } else if (qtype === 'array') {
+        q0 = quote[0];
+        q1 = quote[1];
+      } else {
+        q0 = q1 = quote;
+      }
+      if (typeof separator === 'undefined' || separator === null) separator = ',';
+      
+      for (i = 0; i < j; i++) {
+        result += q0 + f(arr[i]) + q1;
+        if (i < j-1) {
+          result += separator;
+        }
+      }
+      return result;
+    }
+
     // obj is either JS hash or array
   , traverse: function (obj, arrKeys, create) {
       var i, n = obj, j = arrKeys.length, k, nn;
@@ -293,6 +396,31 @@
       return (_.typeOf(thing1) === 'array') ? _.arrIntersect(thing1, thing2) : _.objIntersect(thing1, thing2);
     }
 
+  , hasCommon: function (obj1, obj2) {
+      for (var key1 in obj1) {
+        if (key1 in obj2) {
+          if (obj1[key1] === obj2[key1]) {
+            return true;
+          }
+        }
+      }
+      return false;
+    }
+
+  // quick pick, with no hasOwnProperty checking
+  , qpick: function (obj, arr) {
+      var result = {}
+        , j = arr.length, key;
+
+      while (j--) {
+        key = arr[j];
+        if (obj.key) {
+          result[key] = obj[key];
+        }
+      }
+      return result;
+    }
+
     // Enhanced version of built-in concat
     // shallow copy
   , concat: function (array) {
@@ -345,10 +473,46 @@
         extendDeep(obj1[key], val);
       }
       return obj1;
-    },
+    }
+
+  , qfind: function (arr, key, value) {
+      var i, j = arr.length;
+  
+      for (i = 0; i < j; i++) {
+        if (arr[i][key] === value)
+          return arr[i];
+      }
+      return {};
+    }
+
+  , qkeys: function (obj) {
+      var keys = [];
+
+      for (key in obj) {
+        keys[keys.length] = key;
+      }
+      return keys;      
+  }
+  , qextend: function (obj1, obj2, noKeys, onlyKeys) {
+      var hashOk = null, hashReject = null;
+      
+      if (noKeys) {
+        hashReject = _.hashify(noKeys);
+      } 
+      if (onlyKeys) {
+        hashOk = _.hashify(onlyKeys);
+      } 
+
+      for (key in obj2) {
+        if (hashOk && !(key in hashOk)) { continue; }
+        if (hashReject && key in hashReject) { continue; }        
+        obj1[key] = obj2[key];
+      }
+      return obj1;
+    }
 
     // shallow
-    extendOnly: function (obj1, obj2, keys) {
+  , extendOnly: function (obj1, obj2, keys) {
       return _.extend(obj1, _.pick(obj2, keys));
     },
 
@@ -883,30 +1047,6 @@
       return results;
     }
 
-  , join3: function (arr, getter, quote, separator) {
-      var f = _.getterx(getter)
-        , qtype = _.typeOf(quote)
-        , q0, q1
-        , result = '', i, j = arr.length;
-
-      if (quote === null || qtype === 'undefined') {
-        q0 = q1 = '"';
-      } else if (qtype === 'array') {
-        q0 = quote[0];
-        q1 = quote[1];
-      } else {
-        q0 = q1 = quote;
-      }
-      if (typeof separator === 'undefined' || separator === null) separator = ',';
-      
-      for (i = 0; i < j; i++) {
-        result += q0 + f(arr[i]) + q1;
-        if (i < j-1) {
-          result += separator;
-        }
-      }
-      return result;
-    }
 
     /**
      * Deepen shallow iterator-based functions

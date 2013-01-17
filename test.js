@@ -57,10 +57,10 @@ describe('undertow', function (){
 
   });
 
-  describe('#join3()', function () {
+  describe('#strjoin()', function () {
 
     it('should return a joined string - double quote, default sep', function (){
-      assert.equal(_.join3(['1','2','3'], null, '"'), '"1","2","3"');
+      assert.equal(_.strjoin(['1','2','3'], null, '"'), '"1","2","3"');
     });
 
     it('should return a joined string - no quote, default sep', function (){
@@ -68,7 +68,7 @@ describe('undertow', function (){
             ['josh', 7, 'male', {origin: 'id'}]
           , ['luca', 8, 'male', {origin: 'it'}]
           ];
-      assert.equal(_.join3(rows, [3, 'origin'], ['<', '>'], ':'), '<id>:<it>');
+      assert.equal(_.strjoin(rows, [3, 'origin'], ['<', '>'], ':'), '<id>:<it>');
     });
 
     it('should return a joined string - single quote, bar sep', function (){
@@ -76,7 +76,47 @@ describe('undertow', function (){
             { name: 'josh', age: 7 }
           , { name: 'luca', age: 8 }
           ];
-      assert.equal(_.join3(rows, 'age', "'", '|'), "'7'|'8'");
+      assert.equal(_.strjoin(rows, 'age', "'", '|'), "'7'|'8'");
+    });
+
+  });
+
+  describe('#strrepeat()', function () {
+
+    it('should return repeated string', function (){
+      assert.equal(_.strrepeat('abc', 4), 'abcabcabcabc');
+    });
+
+  });
+
+  describe('#numberFormat()', function () {
+
+    it('should work for whole number - difference: 100s', function (){
+      assert.equal(_.numberFormat(407, 532), '0');
+    });
+
+    it('should work for whole number - difference: 10s', function (){
+      assert.equal(_.numberFormat(30, 40), '0.0');
+    });
+
+    it('should work for whole number - difference: 1s', function (){
+      assert.equal(_.numberFormat(3, 7), '0.00');
+    });
+
+    it('should work for float - case 1', function (){
+      assert.equal(_.numberFormat(0.3, 0.4), '0.000');
+    });
+
+    it('should work for float - case 2', function (){
+      assert.equal(_.numberFormat(0.700, 0.800), '0.000');
+    });
+
+    it('should work for float - case 3', function (){
+      assert.equal(_.numberFormat(0.932910065, 1.045305964), '0.000');
+    });
+
+    it('should work for float - case 4', function (){
+      assert.equal(_.numberFormat(46.0391117, 62.14470284), '0.00');
     });
 
   });
@@ -296,6 +336,13 @@ describe('undertow', function (){
       assert.deepEqual(_.pluck3(rows, getter), [7, 8]);
     });
 
+    it('should pluck3 from geojson file', function (){
+      var parsedJson = require('./test-data.json')
+        , getter = ["properties", "feature_code"]
+        , results = ['30150','30200','30250','30270','30300','30330','30350','30400','30450','30500','30550','30600','30650','30700','30750','30770','30800','30850','30900','30950','31000','31700','31750','31810','31850','31900','31950','31980','32000','32060','32100','32130','32150','32200','32250','32300','32330','32350','32400','32450','32500','32530','32550','32600','32650','32700','32740','32750','32770','32800','32850','32900','32950','33000','33030','33050','33100','33150','33200','33250','33300','33350','33460','33600','33650','33700','33750','33800','33830','33840','33850','33900','33930','33960','34000','34050','34100','34150','34200','34250','34300','34350','34400','34420','34430','34450','34550','34570','34600','34700','34740','34760','34830','34850','34900','34950','34800','34970','35000','35050','35100','35150','35250','35300','35350','35450','35500','35550','35600','35650','35670','35700','35730','35750','35770','35800','35850','35900','35950','36050','36070','36100','36150','36200','36250','36300','36350','36400','36450','36470','36550','36570','36480','36600','36650','36700','36750','36800','36850','36900','36950','37000','37090','37110','39399','37120','37150','37170','37200','37260','37300','37330','37400','37450','37500','37550','37570','37600','37650'];
+      
+      assert.deepEqual(_.pluck3(parsedJson.features, getter), results);
+    });
   });
 
   describe('#extract3()', function () {
@@ -667,7 +714,7 @@ describe('undertow', function (){
           { getter: ["properties", "OBJECTID"], "setter": "id" }
         ];
         
-    it('should translate3 ', function (){
+    it('should translate3 for geojson', function (){
       assert.deepEqual(_.translate3(features, translators), results);
     });
 
