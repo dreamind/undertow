@@ -89,6 +89,33 @@ describe('undertow', function (){
 
   });
 
+  describe('#cchfck()', function () {
+
+    it('should return random value', function (){
+      var trials = 100, results = [];
+
+      while (trials--) {
+        results.push(_.cchfck().split('=')[1]); // get the random component
+      }
+      assert.equal(results.length, _.uniq(results).length);
+    });
+
+  });
+
+  describe('#encodeURL()', function () {
+
+    it('should return encodedURI 1', function (){
+      assert.equal(_.encodeURL({x: "- _ . ! ~ * ' ( ) \""}), "x=-+_+.+%21+%7E+*+%27+%28+%29+%22");
+    });
+    it('should return encodedURI 2', function (){
+      assert.equal(_.encodeURL({x: 'a b c'}, 'js'), 'x=a%20b%20c');
+    });
+    it('should return encodedURI 3', function (){
+      assert.equal(_.encodeURL({x: 'a b c'}, 'js'), 'x=a%20b%20c');
+    });
+
+  });
+
   describe('#numberFormat()', function () {
 
     it('should work for whole number - difference: 100s', function (){
@@ -117,6 +144,19 @@ describe('undertow', function (){
 
     it('should work for float - case 4', function (){
       assert.equal(_.numberFormat(46.0391117, 62.14470284), '0.00');
+    });
+
+  });
+
+  describe('#diff()', function () {
+
+    it('should find diff', function (){
+      var arr1 = [1,2,3,4], arr2 = [3,5,7,1];
+
+      assert.deepEqual(
+        _.diff(arr1, arr2), 
+        [[4, 2], [7, 5]]
+      );      
     });
 
   });
@@ -201,7 +241,7 @@ describe('undertow', function (){
     it('should return default value r non-existing keys', function (){
       assert.equal(_.read(obj1, ["k2", "k3"], 'default'), 'default');
       assert.equal(_.traverse(obj1, ["k2", "k3"]), null); // non invasive
-    });
+    })
 
   });
 

@@ -230,6 +230,80 @@
       return '0.00';
     }
 
+  , encodeHTML: function (val) {
+      return String(val)
+        .replace(/&/g, '&amp;')
+        .replace(/"/g, '&quot;')
+        .replace(/'/g, '&#39;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;');
+    }
+
+  , encodeURLComponentx: function (scheme) {
+      var f;
+
+      if (scheme === 'js' ) { // basic JS encodeURIComponent
+        f = encodeURIComponent;
+      } else if (scheme === 'rfc3986') {
+        f = function (val) {
+          return encodeURIComponent(val).replace(/[!'{}()]/g, escape).replace(/\*/g, "%2A");
+        };
+      } else { // x-www-form-urlencoded is default, follow java.net.URLEncoder
+        f = function (val) {
+          return encodeURIComponent(val).replace(/[!~'{}()]/g, escape).replace(/%20/g, '+');
+        };
+      }
+      return f;
+    }
+
+  , encodeURLComponent: function (comp, scheme) {
+      if (!comp) return '';
+      var f = _.encodeURLComponentx(scheme);
+      return f(comp);
+    }
+
+  , encodeURL: function (params, scheme) {
+      if (!params) return '';
+      var url = '', param, f = _.encodeURLComponentx(scheme), results = [], i, j;
+
+      for (param in params) {
+        results.push(param.toString() + '=' + f(params[param].toString()));
+      }
+      for (i = 0, j = results.length; i < j-1; i++) {
+        url += results[i] + '&';
+      }
+      url += results[i];
+      return url;
+    }
+
+  , decodeURLComponentx: function (scheme) {
+      var f;
+
+      if (scheme === 'js' ) { // basic JS encodeURIComponent
+        f = decodeURIComponent;
+      } else if (scheme === 'rfc3986') {
+        f = function (val) {
+          return decodeURIComponent(val.replace(/%2A/g, "*"));
+        };
+      } else { // x-www-form-urlencoded is default, follow java.net.URLEncoder
+        f = function (val) {
+          return decodeURIComponent(val.replace(/\+/g, '%20'));
+        };
+      }
+      return f;
+    }
+
+  , decodeURLComponent: function (comp, scheme) {
+      if (!comp) return '';
+      var f = _.decodeURLComponentx(scheme);
+      return f(comp);
+    }
+
+  , cchfck: function(tag) {
+      tag = tag || 'cchfck'; 
+      return tag + '=' + Math.random();
+    }
+
   , tablize: function (obj) {
       var html = '<table>', prop;
   
@@ -338,7 +412,7 @@
     }
 
   , add: function (obj, key, val) {
-      if (!obj.key) {
+      if (!(key in obj)) {
         obj[key] = val || 1;
       }
       return obj;
@@ -348,7 +422,7 @@
       var results = {};
 
       _.each(_.flatten(array), function (val) {
-        results[val] = defaultVal || 1;
+        results[val] = (_.typeOf(defaultVal) === 'undefined') ? 1 : defaultVal;
       });
       return results;
     }
@@ -365,6 +439,35 @@
         results[results.length] = row;
       });
       return results;
+    }
+
+  , diff: function (arr1, arr2) {
+      arr1 = arr1 || [];
+      arr2 = arr2 || [];
+      var l1 = arr1.length, l2, added = [], removed = [], found = 0
+        , arr2map = [];
+
+      while (l1--) {
+        found = 0;
+        l2 = arr2.length;
+        while (l2--) {
+          if (_.isEqual(arr1[l1], arr2[l2])) {
+            found = 1;
+            arr2map[l2] = 1;
+          }
+          if (found) break;
+        }
+        if (!found)
+          removed.push(arr1[l1]);
+      }
+      l2 = arr2.length;
+      while (l2--) {
+        if (!arr2map[l2]) {
+          added.push(arr2[l2]);
+        }
+      }
+
+      return [removed, added];
     }
 
   , arrIntersect: function (arr1, arr2) {
@@ -408,14 +511,18 @@
     }
 
   // quick pick, with no hasOwnProperty checking
-  , qpick: function (obj, arr) {
+  , qpick: function (obj, arr, defaultVal) {
       var result = {}
         , j = arr.length, key;
 
       while (j--) {
         key = arr[j];
-        if (obj.key) {
+        if (obj[key]) {
           result[key] = obj[key];
+        } else {
+          if (_.typeOf(defaultVal) !== 'undefined') {
+            result[key] = defaultVal;
+          }          
         }
       }
       return result;
@@ -440,7 +547,7 @@
     },
 
     cloneDeep: function cloneDeep(obj) {
-      var result = {}, type = _.typeOf(obj), key, val;
+      var type = _.typeOf(obj), result = (type === 'array') ? [] : {},  key, val;
 
       if (type !== 'object' && type !== 'array')
         return _.clone(obj);
@@ -544,7 +651,7 @@
 
       if (type === 'string' || type === 'number') {
         f = function (obj) {
-          return (obj[getter]) ? obj[getter] : null;
+          return obj[getter];
         };
       } else if (type === 'array') {
         f = function (obj) {
