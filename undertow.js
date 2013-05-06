@@ -177,6 +177,47 @@
       return xmlDoc;
     }
 
+    /**
+    Sample config:
+      { className: 'Aura.ux.slider.Single'
+      , pathPad:  'main/'
+      }
+     **/
+  , jsclasspath: function (config) {
+      var obj = {
+        className: 'namespace.class'
+      , pathPad:  ''
+      , dirArr: null
+      , rootPath: null
+      , classPath: null
+      , namespacePath: null
+      , getNamespacePath: function () {
+          return this.namespacePath;
+        }
+      , getRootPath: function () {
+          return this.rootPath;
+        }
+      , getClassPath: function (depth) {
+          if (_.typeOf(depth) === 'string') {
+            depth = depth.split('.').length;
+          } 
+          if (_.typeOf(depth) === 'number') {
+            return this.getRootPath() + this.dirArr.slice(0, depth).join('/');
+          }
+          return this.getRootPath() + this.getNamespacePath();  
+        }
+      , init: function () {
+          this.rootPath = _.strrepeat('../', 2 + (this.className.match(/\./g) || []).length) + this.pathPad;        
+          this.dirArr = this.className.toLowerCase().split(".");
+          this.namespacePath = this.dirArr.slice(0, -1).join("/");
+        }
+      };
+
+      _.extend(obj, config);
+      obj.init();
+      return obj;
+    }
+
   , strrepeat: function (pattern, count) {
       // http://stackoverflow.com/questions/202605/repeat-string-javascript
 

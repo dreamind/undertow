@@ -89,6 +89,24 @@ describe('undertow', function (){
 
   });
 
+  describe('#jsclasspath()', function () {
+
+    it('should jsclasspath', function (){
+      var config = {
+        className: 'Ext.ns1.ns2.SomeClass'
+      , pathPad:  'main/' // must end with slash        
+      };
+
+      var jcp = _.jsclasspath(config);
+      assert.equal(jcp.getRootPath(), '../../../../../main/');
+      assert.equal(jcp.getNamespacePath(), 'ext/ns1/ns2');
+      assert.equal(jcp.getClassPath(), '../../../../../main/ext/ns1/ns2');
+      assert.equal(jcp.getClassPath(2), '../../../../../main/ext/ns1');
+      assert.equal(jcp.getClassPath('Ext.ns1'), '../../../../../main/ext/ns1');
+    });
+
+  });  
+
   describe('#cchfck()', function () {
 
     it('should return random value', function (){
