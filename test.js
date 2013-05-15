@@ -89,6 +89,26 @@ describe('undertow', function (){
 
   });
 
+  describe('#splitg()', function () {
+
+    it('should return splitted string', function (){
+      assert.deepEqual(_.splitg(' \tr abc\t\txyz  ', '\t '), [ '', 'r abc', 'xyz' ]);
+      assert.deepEqual(_.splitg('1\t a b c\t \txyz  mm', '\t '), [ '1', 'a b c', 'xyz', 'mm' ]);
+    });
+
+  });  
+
+  describe('#tabular()', function () {
+
+    it('should return tabularized string', function (){
+      var str = ' \tr abc\t\txyz  888 \n1\t a b c\t \txyz  mm'
+        , output =  '   r abc  xyz  888\n' +
+                    '1  a b c  xyz  mm ';
+
+      assert.equal(_.tabular(str), output);
+    });
+
+  }); 
   describe('#jsclasspath()', function () {
 
     it('should jsclasspath', function (){
@@ -162,6 +182,37 @@ describe('undertow', function (){
 
     it('should work for float - case 4', function (){
       assert.equal(_.numberFormat(46.0391117, 62.14470284), '0.00');
+    });
+
+  });
+
+  describe('#transpose()', function () {
+
+    it('should transpose', function (){
+      var obj = {
+        "Df": [1, 35],
+        "Sum Sq": [570310, 738800],
+        "Mean Sq": [570310, 21109],
+        "F value": [27.018, null],
+        "Pr(>F)": [0.000008816, null]
+      };
+
+      assert.deepEqual(
+        _.transpose(obj), 
+        [{
+          'Df': 1,
+          'Sum Sq': 570310,
+          'Mean Sq': 570310,
+          'F value': 27.018,
+          'Pr(>F)': 0.000008816
+        }, {
+          'Df': 35,
+          'Sum Sq': 738800,
+          'Mean Sq': 21109,
+          'F value': null,
+          'Pr(>F)': null
+        }]
+      );      
     });
 
   });

@@ -381,6 +381,89 @@
       return result;
     }
 
+  , splitg: function (str, delimiters, singleSpace) {
+      var isDelimiter, isDelim, found
+        , delimiters = delimiters || '\t '
+        , snip, i = 0, j = str.length, k, l = delimiters.length, delim, delimCount
+        , tokens = [], t = 0, ctoken = '', ch = null, c        
+        , singleSpace = (_.typeOf(singleSpace) === 'undefined') ? true : singleSpace; // except
+
+      while (i < j) {
+        c = ch;
+        ch = str.charAt(i);
+        isDelim = isDelimiter;
+        isDelimiter = (delimiters.indexOf(ch) !== -1);
+        if (isDelimiter) {
+          delimCount++;
+          if (singleSpace && delimCount == 1) {
+            // look ahead for non delimiters
+            if (ch === ' ' && delimiters.indexOf(str.charAt(i+1)) === -1) {
+              isDelimiter = false;
+            }
+          } 
+          if (isDelimiter && isDelim !== isDelimiter) {
+            // char -> delimiter
+            tokens[t++] = ctoken;
+            ctoken = '';
+          }
+        }
+        if (!isDelimiter) {
+          delimCount = 0;
+          ctoken += ch;
+        }
+        i++;
+
+      }
+      if (!isDelimiter) {
+        tokens[t++] = ctoken;
+      }
+      return tokens;
+  }
+
+  , tabular: function (str) {
+      var lines = _.splitg(str, '\r\n')
+        , i, j = lines.length, output = ''
+        , gutter = '  ', line, k, l, len, len2, val, pad
+        , maxLen = [];
+  
+      lines = _.map(lines, function (line) { return _.splitg(line);} );
+
+      for (i = 0; i < j; i++) {
+        line = lines[i];
+        for (k = 0, l = line.length; k < l; k++) {
+          len = maxLen[k];
+          if (_.typeOf(len) === 'undefined') {
+            len = 0;
+          }
+          len2 = line[k].length;
+          if (len < len2) {
+            len = len2;
+          }
+          maxLen[k] = len;
+        }
+      }
+      for (i = 0; i < j; i++) {
+        line = lines[i];
+        for (k = 0, l = maxLen.length; k < l; k++) {
+          len = maxLen[k];
+          val = line[k];
+          if (_.typeOf(val) === 'undefined') {
+            val = '';
+          }
+          pad = _.strrepeat(' ', len - val.length);
+          output += line[k] + pad ;
+          if (k < l-1) {
+            output += gutter;
+          }
+        }
+        if (i < j-1) {
+          output += '\n';  
+        }        
+      }
+
+      return output;
+    }
+
     // obj is either JS hash or array
   , traverse: function (obj, arrKeys, create) {
       var i, n = obj, j = arrKeys.length, k, nn;
@@ -479,6 +562,25 @@
         row[valField] = val;
         results[results.length] = row;
       });
+      return results;
+    }
+
+  , transpose: function (obj) {
+      var keys = _.keys(obj)
+        , colNum = keys.length
+        , rowNum = obj[keys[0]].length
+        , i, j, key, row
+        , results = [];
+
+      for (i = 0; i < rowNum; i++) {
+        row = {};
+        for (j = 0; j < colNum; j++) {
+          key = keys[j];
+          row[key] = obj[key][i];
+        }
+        results[i] = row;
+      }
+
       return results;
     }
 
