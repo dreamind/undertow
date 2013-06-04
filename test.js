@@ -230,6 +230,16 @@ describe('undertow', function (){
 
   });
 
+  describe('#prefixOf()', function () {
+
+    it('should check prefixOf', function (){      
+      assert(_.prefixOf(['Aura.', 'Ext.'], 'Aura.ns1.ns2'));
+      assert(_.prefixOf(['Aura.', 'Ext.'], 'Ext.ns1.ns2'));
+      assert(!_.prefixOf(['Aura.', 'Ext.'], 'OpenLayers.ns1.ns2'));
+    });
+
+  });
+
   describe('#traverse()', function () {
 
     it('should return the value of existing keys', function (){

@@ -356,6 +356,19 @@
       return html;
     }
 
+  , prefixOf: function (arr, str) {
+      var i, j = arr.length, prefix, result;
+
+      for (i = 0; i < j; i++) {
+        prefix = arr[i];
+        result = str.match("^"+prefix);
+        if (result) {
+          return true;
+        }
+      }
+      return false;
+    }    
+
   , strjoin: function (arr, getter, quote, separator) {
       var f = _.getterx(getter)
         , qtype = _.typeOf(quote)
@@ -462,6 +475,22 @@
       }
 
       return output;
+    }
+
+  , assign: function (ns, val) {
+      var props, obj, arrKeys, create = true;
+
+      props = ns.split('.');
+      try {
+        obj = evil(props[0]);  
+      } catch(e) {
+        evil('var '+props[0]+'={};');
+        obj = evil(props[0]);
+      }
+      arrKeys = props.splice(1);
+      _.update(obj, arrKeys, val, create);
+
+      return _.traverse(obj, arrKeys, create);
     }
 
     // obj is either JS hash or array
