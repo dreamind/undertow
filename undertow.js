@@ -163,6 +163,38 @@
     // https://gist.github.com/982883
   , uuid4: function b(a){return a?(a^Math.random()*16>>a/4).toString(16):([1e7]+-1e3+-4e3+-8e3+-1e11).replace(/[018]/g,b);}
 
+  , between: function (num, start, end) {
+      if (num >= start && num <= end) {
+        return true;
+      }
+      return false;
+    }
+
+  , amult: function (val, num) {
+      // http://stackoverflow.com/questions/12503146/create-an-array-with-same-element-repeated-multiple-times-in-javascript
+
+      if (!num) return [];
+      var type   = _.typeOf(val)
+        , el     = (type === 'array') ? val : [val]
+        , result = el
+        , idx    = 1;        
+
+      while (true) {
+        idx <<= 1;
+        if (idx > num) {
+          idx >>= 1;
+          break;
+        }
+        result = result.concat(result);        
+      }
+      idx = num - idx;
+      while (idx > 0) {
+        result = result.concat(el);
+        idx--;
+      }
+      return result;
+    }
+
   , strxml: function (xmlString) {
       var xmlDoc, parser;
 
@@ -476,6 +508,7 @@
 
       return output;
     }
+
 
   , assign: function (ns, val) {
       var props, obj, arrKeys, create = true;

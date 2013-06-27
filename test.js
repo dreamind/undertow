@@ -57,6 +57,24 @@ describe('undertow', function (){
 
   });
 
+  describe('#amult()', function () {
+    
+
+
+    it('should repeat array for array value', function () {
+      assert.deepEqual(_.amult([1, 2], 2), [1, 2, 1, 2]);
+    });
+
+    it('should repeat array for non array value', function () {
+      assert.deepEqual(_.amult(3, 7), [3, 3, 3, 3, 3, 3, 3]);
+    });
+    
+    it('should repeat array for array value, num = 1', function () {
+      assert.deepEqual(_.amult([888], 1), [888]);
+    });
+
+  });
+
   describe('#strjoin()', function () {
 
     it('should return a joined string - double quote, default sep', function (){
