@@ -170,6 +170,10 @@
       return false;
     }
 
+  , now: function () {
+      return new Date().toISOString();
+    }
+
   , amult: function (val, num) {
       // http://stackoverflow.com/questions/12503146/create-an-array-with-same-element-repeated-multiple-times-in-javascript
 
@@ -528,22 +532,22 @@
 
     // obj is either JS hash or array
   , traverse: function (obj, arrKeys, create) {
-      var i, n = obj, j = arrKeys.length, k, nn;
+      var i, n = obj, j = arrKeys.length, k, defined;
 
       for (i = 0; i < j; i++) {
         k = arrKeys[i];
-        if (n[k]) {
-          nn = n[k];
+        if ((_.typeOf(n) === 'object' && k in n) || n[k]) {
+          defined = true;
         } else {
-          nn = null;
+          defined = false;
         }
-        if (!nn) {
+        if (!defined) {
           if (!create) {
-            return null;
+            return undefined;
           }
           n = n[k] = {};
         } else {
-          n = nn;
+          n = n[k];
         }
       }
       return n;
@@ -551,7 +555,7 @@
 
   , read: function (obj, arrKeys, defaultVal) {
       var n = _.traverse(obj, arrKeys);
-      if(n === null && defaultVal) {
+      if(_.typeOf(n) === 'undefined' && defaultVal) {
         n = defaultVal;
       }
       return n;
@@ -954,9 +958,10 @@
   , transfunction: function (qualifiers, kinds) {
       var fs = [], q, f, k, fx, k2, l, exact;
 
-      for (var i = 0, j = qualifiers.length; i < j; i++) {
+      //for (var i = 0, j = qualifiers.length; i < j; i++) {
+      _.each(qualifiers, function (q, i) {
         // applied in sequence
-        q = qualifiers[i];
+        //q = qualifiers[i];
         l = kinds.length;
         f = {};
         while (l--) {
@@ -968,7 +973,7 @@
           f[k] = fx(q[k2], exact);
         }
         fs[fs.length] = f;
-      }
+      });
       return fs; // array of processed matcher functions
     }
 
@@ -1048,6 +1053,10 @@
       return _.getterx(getter)(obj);
     }
 
+  , plunk: function (obj, setter, value) {
+      return _.setterx(setter)(obj, value);
+    }
+
   , match: function (obj, matchers, all) {
       return _.match1(obj, _.matcherx(matchers), all);
     }
@@ -1124,8 +1133,8 @@
      */
   , match3: function (rows, matchersOrObject, exact) {
       return (_.isArray(matchersOrObject)) ?
-        matchMatchers(rows, matchersOrObject, exact) :
-        matchObject(rows, matchersOrObject, exact);
+        _.matchMatchers(rows, matchersOrObject, exact) :
+        _.matchObject(rows, matchersOrObject, exact);
     }
     /**
      * Return an array of row based on matcher's object
@@ -1359,6 +1368,122 @@
       return results;
     }
 
+      /*
+[
+  { data: {
+      label: 'A'
+    , year: {
+        1990: 1
+        2000: 2
+      }
+    }
+  }
+, { data: {
+      label: 'B'
+    , year: {
+        1992: 22
+        2000: 24
+      }
+    }
+  }
+, { data: {
+      label: 'C'
+    , year: {
+        1990: 31
+        1992: 35
+        2001: 99
+      }
+    }
+  }
+]
+
+
+[
+  { id: 1990
+  , attr: [
+      { key: 'A'
+      , value: 1
+      }
+    ]
+  , C: 31
+  }
+, { id: 1992
+  , attr: [
+      { key: 'B'
+      , value: 22
+      }
+    ]
+  , C: 35
+  }
+, { id: 2000
+  , attr: [
+      { key: 'A'
+      , value: 2
+      }  
+    , { key: 'B'
+      , value: 24
+      }
+    ]
+  }
+, { id: 2001
+  , C: 99
+  }  
+]
+
+srcRowGetter: ['data', 'label'] // return 'A', 'B', 'C'
+srcPropGetters, { // return values
+  1990: ['data', 'year', 1990]
+, 1992: ['data', 'year', 1992]
+, 2000: ['data', 'year', 2000]
+, 2001: ['data', 'year', 2001]
+}
+
+dstRowSetter: 'id'
+dstPropSetters: {
+  'A': function(obj, value) { 
+    if (!obj.attr) obj.attr = [];
+    obj.attr.push({ key: 'A', value: value}); 
+  }
+, 'B': function(obj, value) { 
+    if (!obj.attr) obj.attr = [];
+    obj.attr.push({ key: 'A', value: value}); 
+  }
+, 'C': 'C'
+}
+
+
+
+
+      */
+  , transpose3: function (rows, srcRowGetter, dstPropSetters, srcPropGetters, dstRowSetter) {
+
+      var dstKeys = [], results = {}, result;
+
+      _.each(srcPropGetters, function (srcPropGetter, dstKey) {
+        var value;
+
+        _.each(rows, function (row, index) {
+          var value, propSetter, row2;
+
+          value = _.cull(row, srcRowGetter);
+          propSetter = dstPropSetters[value];
+
+          if (!(dstKey in results)) {
+            dstKeys.push(dstKey);
+            results[dstKey] = result = {};
+            _.plunk(result, dstRowSetter, dstKey);     
+          } else {
+            result = results[dstKey];
+          }
+
+          value = _.cull(row, srcPropGetter);
+          if (propSetter && _.typeOf(value) !== 'undefined') {
+            _.plunk(result, propSetter, value);  
+          }       
+        });
+      });
+      return results;
+    }
 
     /**
      * Deepen shallow iterator-based functions
@@ -1368,7 +1493,7 @@
      * @return {Function} A new function that supports getter
      *
      * Example:
-     * _.groupBy3 == _.deepen(_.groupBy)
+     * _.groupBy3 == _.tow(_.groupBy)
      *
      */
   , tow: function (fn) {
