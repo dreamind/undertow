@@ -1437,42 +1437,44 @@ describe('undertow', function (){
       assert.deepEqual(results, expected);
     });
 
-    it('should transpose3 second time', function (){
-      var rows = [
-        { data: {
-            label: 'Year'
-          , year1: '1900'
-          , year2: '1990'
-          }
+    var rows = [
+      { data: {
+          label: 'Year'
+        , year1: 1900
+        , year2: 1990
         }
-      , { data: {
-            label: 'Total Population',
-            year1: 1,
-            year2: 2
-          }
+      }
+    , { data: {
+          label: 'Total Population',
+          year1: 1,
+          year2: 2
         }
-      , { data: {
-            label : 'Group Quarters Population Population',
-            year1 : 3,
-            year2 : 4
-          }
+      }
+    , { data: {
+          label : 'Group Quarters Population Population',
+          year1 : 3,
+          year2 : 4
         }
-      ];
+      }
+    ];
 
-      var expected = {
-        1900: { 
-          label: '1900'
-        , year: 1900
-        , totalPopulation: 1
-        , gQPopulation: 3
-        }
-      , 1990: { 
-          label: '1990'
-        , year: 1990
-        , totalPopulation: 2
-        , gQPopulation: 4
-        }
-      };
+    var expected = {
+      1900: { 
+        label: '1900'
+      , year: 1900
+      , totalPopulation: 1
+      , gQPopulation: 3
+      }
+    , 1990: { 
+        label: '1990'
+      , year: 1990
+      , totalPopulation: 2
+      , gQPopulation: 4
+      }
+    };
+
+    it('should transpose3 second time', function (){
+
 
       var srcRowGetter = ['data', 'label'];
       var dstPropSetters = {
@@ -1483,70 +1485,92 @@ describe('undertow', function (){
       var srcPropGetters = {
         1900: ['data', 'year1']
       , 1990: ['data', 'year2']
-      };      
+      }; 
       var dstRowSetter = function(obj, value) {
-        obj.label = value;
+        obj.label = value.toString();
         obj.year = parseInt(value);
       };
 
       var results = _.transpose3(rows, srcRowGetter, dstPropSetters, srcPropGetters, dstRowSetter);
 
       assert.deepEqual(results, expected);
+
     });
 
+    it('should transpose3 second time reverse', function (){
+
+      var srcRowGetter = 'label';
+      var dstPropSetters = {
+        '1900': ['data', 'year1']
+      , '1990': ['data', 'year2']
+      };  
+      var srcPropGetters  = {
+        'Year': 'year',
+        'Total Population': 'totalPopulation'
+      , 'Group Quarters Population Population': 'gQPopulation'
+      };
+    
+      var dstRowSetter = ['data', 'label'];
+      
+      var results = _.values(_.transpose3(_.values(expected), srcRowGetter, dstPropSetters, srcPropGetters, dstRowSetter));
+      assert.deepEqual(results, rows);
+
+
+    });
+
+    var rows3 = [
+      { data: {
+          label: 'Year'
+        , year1: 2003
+        , year2: 2005
+        }
+      }
+    , { data: {
+          label: 'Manufacturing',
+          year1: 20031,
+          year2: 20051
+        }
+      }
+    , { data: {
+          label : 'Arts/Entertain/Rec.',
+          year1 : 20032
+        }
+      }
+    , { data: {
+          label : 'Service',
+          year2 : 20052
+        }
+      }
+    ];
+
+    var expected3 = [
+      { 
+        label: '2003'
+      , year: 2003
+      , employmentEntries: [
+          { sectorLabel: "Manufacturing"
+          , employees: 20031
+          }
+        , { sectorLabel: "Arts/Entertain/Rec."
+          , employees: 20032
+          }
+        ]
+      }
+    , { 
+        label: '2005'
+      , year: 2005
+      , employmentEntries: [
+          { sectorLabel: "Manufacturing"
+          , employees: 20051
+          }
+        , { sectorLabel: "Service"
+          , employees: 20052
+          }
+        ]
+      }
+    ];
 
     it('should transpose3 third time', function (){
-      var rows = [
-        { data: {
-            label: 'Year'
-          , year1: '2003'
-          , year2: '2005'
-          }
-        }
-      , { data: {
-            label: 'Manufacturing',
-            year1: 20031,
-            year2: 20051
-          }
-        }
-      , { data: {
-            label : 'Arts/Entertain/Rec.',
-            year1 : 20032
-          }
-        }
-      , { data: {
-            label : 'Service',
-            year2 : 20052
-          }
-        }
-      ];
-
-      var expected = [
-        { 
-          label: '2003'
-        , year: 2003
-        , employmentEntries: [
-            { sectorLabel: "Manufacturing"
-            , employees: 20031
-            }
-          , { sectorLabel: "Arts/Entertain/Rec."
-            , employees: 20032
-            }
-          ]
-        }
-      , { 
-          label: '2005'
-        , year: 2005
-        , employmentEntries: [
-            { sectorLabel: "Manufacturing"
-            , employees: 20051
-            }
-          , { sectorLabel: "Service"
-            , employees: 20052
-            }
-          ]
-        }
-      ];
 
       var srcRowGetter = ['data', 'label'];
       var propSetFunc = function (label) {
@@ -1569,15 +1593,51 @@ describe('undertow', function (){
       , 2005: ['data', 'year2']
       };      
       var dstRowSetter = function(obj, value) {
-        obj.label = value;
+        obj.label = value.toString();
         obj.year = parseInt(value);
       };
 
-      var results = _.values(_.transpose3(rows, srcRowGetter, dstPropSetters, srcPropGetters, dstRowSetter));
+      var results = _.values(_.transpose3(rows3, srcRowGetter, dstPropSetters, srcPropGetters, dstRowSetter));
 
-      assert.deepEqual(results, expected);
+      assert.deepEqual(results, expected3);
     });
+
+
+    it('should transpose3 third time reverse', function (){
+
+      var srcRowGetter = 'label';
+      var dstPropSetters = {
+        2003: 'year1'
+      , 2005: 'year2'
+      };
+
+      var propGetFunc = function (label) {
+        return function (obj) {
+          var entries = obj.employmentEntries;
+          if (!entries) return; // return undefined;
+          for (var i = 0, j = entries.length; i < j; i++) {
+            var entry = entries[i];
+            if (entry.sectorLabel === label) return entry.employees;
+          }
+          return;
+        };
+      };
+      var srcPropGetters = {
+        'Year': 'year'
+      , 'Manufacturing': propGetFunc('Manufacturing')
+      , 'Arts/Entertain/Rec.': propGetFunc('Arts/Entertain/Rec.')
+      , 'Service': propGetFunc('Service')
+      };      
+      var dstRowSetter = 'label';
+
+      var results = _.values(_.transpose3(_.values(expected3), srcRowGetter, dstPropSetters, srcPropGetters, dstRowSetter));
+
+      assert.deepEqual(results, _.pluck3(rows3, 'data'));
+    });
+
+
   });
+
 
   describe('#tow()', function () { 
     var rows = [
