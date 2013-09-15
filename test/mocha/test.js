@@ -1,4 +1,4 @@
-var _ = require('./undertow')
+var _ = require('../../undertow')
   , assert = require('chai').assert
   , getterCases = [
       "k1",
@@ -41,7 +41,7 @@ describe('undertow', function (){
   });
 
   describe('#xf()', function () {
-    
+
     var f = function (a) {
           return this.injected + a;
         }
@@ -58,7 +58,7 @@ describe('undertow', function (){
   });
 
   describe('#amult()', function () {
-    
+
 
 
     it('should repeat array for array value', function () {
@@ -99,10 +99,35 @@ describe('undertow', function (){
 
   });
 
-  describe('#strrepeat()', function () {
+  describe('#', function () {
 
     it('should return repeated string', function (){
       assert.equal(_.strrepeat('abc', 4), 'abcabcabcabc');
+    });
+
+  });
+
+  describe('#classpath()', function () {
+
+    it('should return classpath', function (){
+      assert.deepEqual(_.classpath('A.b.C', 1), {
+        ladder: '../../../'
+      , dir: 'a/b/'
+      });
+    });
+
+    it('should return classpath of current directory', function (){
+      assert.deepEqual(_.classpath('C'), {
+        ladder: ''
+      , dir: '/'
+      });
+    });
+
+    it('should return classpath of current directory', function (){
+      assert.deepEqual(_.classpath('x.Z'), {
+        ladder: '../'
+      , dir: 'x/'
+      });
     });
 
   });
@@ -114,7 +139,7 @@ describe('undertow', function (){
       assert.deepEqual(_.splitg('1\t a b c\t \txyz  mm', '\t '), [ '1', 'a b c', 'xyz', 'mm' ]);
     });
 
-  });  
+  });
 
   describe('#tabular()', function () {
 
@@ -126,13 +151,13 @@ describe('undertow', function (){
       assert.equal(_.tabular(str), output);
     });
 
-  }); 
+  });
   describe('#jsclasspath()', function () {
 
     it('should jsclasspath', function (){
       var config = {
         className: 'Ext.ns1.ns2.SomeClass'
-      , pathPad:  'main/' // must end with slash        
+      , pathPad:  'main/' // must end with slash
       };
 
       var jcp = _.jsclasspath(config);
@@ -143,7 +168,7 @@ describe('undertow', function (){
       assert.equal(jcp.getClassPath('Ext.ns1'), '../../../../../main/ext/ns1');
     });
 
-  });  
+  });
 
   describe('#cchfck()', function () {
 
@@ -216,7 +241,7 @@ describe('undertow', function (){
       };
 
       assert.deepEqual(
-        _.transpose(obj), 
+        _.transpose(obj),
         [{
           'Df': 1,
           'Sum Sq': 570310,
@@ -230,7 +255,7 @@ describe('undertow', function (){
           'F value': null,
           'Pr(>F)': null
         }]
-      );      
+      );
     });
 
   });
@@ -241,16 +266,16 @@ describe('undertow', function (){
       var arr1 = [1,2,3,4], arr2 = [3,5,7,1];
 
       assert.deepEqual(
-        _.diff(arr1, arr2), 
+        _.diff(arr1, arr2),
         [[4, 2], [7, 5]]
-      );      
+      );
     });
 
   });
 
   describe('#prefixOf()', function () {
 
-    it('should check prefixOf', function (){      
+    it('should check prefixOf', function (){
       assert(_.prefixOf(['Aura.', 'Ext.'], 'Aura.ns1.ns2'));
       assert(_.prefixOf(['Aura.', 'Ext.'], 'Ext.ns1.ns2'));
       assert(!_.prefixOf(['Aura.', 'Ext.'], 'OpenLayers.ns1.ns2'));
@@ -280,7 +305,7 @@ describe('undertow', function (){
             k231: 'k2-k23-k231'
           }
         }
-      });      
+      });
     });
 
   });
@@ -292,7 +317,7 @@ describe('undertow', function (){
 
       assert.deepEqual(_.update(obj, ["k2", 0], 'k20', create), {
         k2: ['k20']
-      });      
+      });
     });
 
     it('should update an object for existing keys with array index', function (){
@@ -300,7 +325,7 @@ describe('undertow', function (){
 
       assert.deepEqual(_.update(obj, ['k1', 1], 'k12'), {
           'k1': [1, 'k12', 3]
-      });      
+      });
     });
 
     it('should update for newly created keys', function (){
@@ -310,7 +335,7 @@ describe('undertow', function (){
         k2: {
           k21: 'k21'
         }
-      });      
+      });
     });
 
     it('should update for existing keys', function (){
@@ -324,7 +349,7 @@ describe('undertow', function (){
         k2: {
           k21: 'k21'
         }
-      });      
+      });
     });
 
   });
@@ -352,7 +377,7 @@ describe('undertow', function (){
 
       var objx = { 1:2, 3:4 };
       assert.equal(_.remove(objx, [1]), true);
-      assert.deepEqual(objx, {3:4});      
+      assert.deepEqual(objx, {3:4});
     });
 
     it('should not remove non-existing keys', function (){
@@ -365,14 +390,14 @@ describe('undertow', function (){
 
     it('should add to an empty set', function (){
       var obj = {};
-      assert.deepEqual(_.add(obj, 'a'), {a: 1});      
+      assert.deepEqual(_.add(obj, 'a'), {a: 1});
     });
 
     it('should add to an existing set', function (){
       var obj = { a: 1 };
 
       assert.deepEqual(_.add(obj, 'a'), {a: 1});
-      assert.deepEqual(_.add(obj, 'b'), {a: 1, b: 1});      
+      assert.deepEqual(_.add(obj, 'b'), {a: 1, b: 1});
     });
 
   });
@@ -383,14 +408,14 @@ describe('undertow', function (){
       , a3 = [1, { "two": 2 }, { "three": 3 }];
 
     it('should return concatenated arrays', function (){
-      assert.deepEqual(_.concatDeep(a1, a2), a3);      
+      assert.deepEqual(_.concatDeep(a1, a2), a3);
     });
   });
 
   describe('#cloneDeep()', function () {
 
     it('should return deep-equally clone', function (){
-      assert.deepEqual(_.cloneDeep(obj1), obj1);      
+      assert.deepEqual(_.cloneDeep(obj1), obj1);
     });
 
     it('should return clone of different instance', function (){
@@ -405,7 +430,7 @@ describe('undertow', function (){
       , a3 = { 1: 'one', 't2': { "two": 2 }, "three": 3, 4: [5, 6] };
 
     it('should return deep applied object', function (){
-      assert.deepEqual(_.extendDeep(a1, a2), a3);      
+      assert.deepEqual(_.extendDeep(a1, a2), a3);
     });
 
   });
@@ -454,7 +479,7 @@ describe('undertow', function (){
         , { getter: ['k2', 1, 'two'] }
         , { getter: function (obj) { return obj.k2[0]*4; } }
         ];
-      
+
     it('should extract using accessors', function (){
       assert.deepEqual(_.extract(obj, accessors), [777, 222, 8]);
     });
@@ -477,7 +502,7 @@ describe('undertow', function (){
       var parsedJson = require('./test-data.json')
         , getter = ["properties", "feature_code"]
         , results = ['30150','30200','30250','30270','30300','30330','30350','30400','30450','30500','30550','30600','30650','30700','30750','30770','30800','30850','30900','30950','31000','31700','31750','31810','31850','31900','31950','31980','32000','32060','32100','32130','32150','32200','32250','32300','32330','32350','32400','32450','32500','32530','32550','32600','32650','32700','32740','32750','32770','32800','32850','32900','32950','33000','33030','33050','33100','33150','33200','33250','33300','33350','33460','33600','33650','33700','33750','33800','33830','33840','33850','33900','33930','33960','34000','34050','34100','34150','34200','34250','34300','34350','34400','34420','34430','34450','34550','34570','34600','34700','34740','34760','34830','34850','34900','34950','34800','34970','35000','35050','35100','35150','35250','35300','35350','35450','35500','35550','35600','35650','35670','35700','35730','35750','35770','35800','35850','35900','35950','36050','36070','36100','36150','36200','36250','36300','36350','36400','36450','36470','36550','36570','36480','36600','36650','36700','36750','36800','36850','36900','36950','37000','37090','37110','39399','37120','37150','37170','37200','37260','37300','37330','37400','37450','37500','37550','37570','37600','37650'];
-      
+
       assert.deepEqual(_.pluck3(parsedJson.features, getter), results);
     });
   });
@@ -518,7 +543,7 @@ describe('undertow', function (){
   });
 
 
-  describe('#grab3()', function () { 
+  describe('#grab3()', function () {
 
     it('should grab3 from a list', function (){
       var rows = [
@@ -536,7 +561,7 @@ describe('undertow', function (){
       , ['luca', 8]
       ]);
     });
-    
+
     it('should grab3 from a dictionary', function (){
       var rows = {
             'josh' : [7, 'male', {origin: 'id'}]
@@ -552,7 +577,7 @@ describe('undertow', function (){
 
   });
 
-  describe('#pick3()', function () { 
+  describe('#pick3()', function () {
 
     it('should pick3 from a list', function (){
       var rows = [
@@ -570,7 +595,7 @@ describe('undertow', function (){
       , { name: 'luca', age: 8 }
       ]);
     });
-    
+
     it('should pick3 from a dictionary', function (){
       var rows = {
             'josh' : { age: 7, sex: 'male' }
@@ -585,7 +610,7 @@ describe('undertow', function (){
 
   });
 
-  describe('#match1()', function () { 
+  describe('#match1()', function () {
     var rows = [
           { id: 'josh', age: 7, sex: 'male',
             name: {
@@ -624,7 +649,7 @@ describe('undertow', function (){
       assert.isTrue(_.match1(rows[1], matcherfs, all));
       assert.isTrue(_.match1(rows[2], matcherfs, all));
     });
-    
+
     it('should match1 from a list using matchers with a function', function () {
       var matchers = [
             { getter: "age", valuer: function (val) { return val <= 8; } },
@@ -642,7 +667,7 @@ describe('undertow', function (){
       assert.isTrue(_.match1(rows[1], matcherfs, all), 'case 5');
       assert.isFalse(_.match1(rows[2], matcherfs, all), 'case 6');
     });
-    
+
 
     it('should match1 from a list using matchers with a regex and exact = 1', function () {
       var matchers = [
@@ -659,7 +684,7 @@ describe('undertow', function (){
 
   });
 
-  describe('#matchMatchers()', function () { 
+  describe('#matchMatchers()', function () {
     var rows = [
           { id: 'josh', age: 7, sex: 'male',
             name: {
@@ -679,7 +704,7 @@ describe('undertow', function (){
             , last: 'posh'
             }
           }
-        ]; 
+        ];
 
     it('should matchMatcher from a list using matchers', function () {
       var matchers = [
@@ -701,7 +726,7 @@ describe('undertow', function (){
       , rows[1]
       ]);
     });
-    
+
     it('should matchMatcher a list 3', function () {
       var matchers = [
         { getter: "id", valuer: /j.+/ },
@@ -713,7 +738,7 @@ describe('undertow', function (){
 
   });
 
-  describe('#matchObject()', function () { 
+  describe('#matchObject()', function () {
 
     it('should matchObject from a list', function (){
       var rows = [
@@ -733,7 +758,7 @@ describe('undertow', function (){
       exact = 0;
       assert.deepEqual(_.matchObject(rows, obj2, exact), rows);
     });
-    
+
     it('should matchObject from a dictionary', function (){
       var rows = {
             'josh' : { age: 7, sex: 'male' }
@@ -763,7 +788,7 @@ describe('undertow', function (){
         k22: ["k2-k22-0", "k2-k22-1"]
       }
     };
-    
+
     var translators1 = [
       { getter: ["k2", "k21"], "setter": "k2-k21" },
       { getter: "k1" },
@@ -779,7 +804,7 @@ describe('undertow', function (){
       'k2-k22-0': "k2-k22-0",
       'k2-k22-1': "k2-k22-1"
     };
-    
+
     it('should return '+obj3+' for '+translators1, function (){
       assert.deepEqual(obj3, obj2);
     });
@@ -844,20 +869,20 @@ describe('undertow', function (){
           , lat: -37.56102737843926
           , id: 3
           }
-        ]    
+        ]
       , translators = [
           { getter: ["geometry", "coordinates", 0], "setter": "long" },
           { getter: ["geometry", "coordinates", 1], "setter": "lat" },
           { getter: ["properties", "OBJECTID"], "setter": "id" }
         ];
-        
+
     it('should translate3 for geojson', function (){
       assert.deepEqual(_.translate3(features, translators), results);
     });
 
   });
 
-  describe('#mapKey3()', function () { 
+  describe('#mapKey3()', function () {
 
       var rows = [
             { name: 'josh', age: 7, sex: 'female'}
@@ -953,7 +978,7 @@ describe('undertow', function (){
 
   });
 
-  describe('#union3()', function () { 
+  describe('#union3()', function () {
     var rows1 = [
           { id: 'josh', age: 7, sex: 'male',
             name: {
@@ -1002,11 +1027,11 @@ describe('undertow', function (){
       assert.deepEqual([rows1[0], rows1[1], rows2[0]], results);
       assert.deepEqual(rows2[0], results[2]);
       assert.notStrictEqual(rows2[0].name, results[2].name);
-    });  
+    });
 
   });
 
-  describe('#unique3()', function () { 
+  describe('#unique3()', function () {
     var rows = [
           { id: 'josh', age: 7, sex: 'male',
             name: {
@@ -1051,7 +1076,7 @@ describe('undertow', function (){
       assert.deepEqual(rows, results);
       assert.deepEqual(rows[2], results[2]);
       assert.notStrictEqual(rows[2].name, results[2].name);
-    });  
+    });
 
     it('should unique3 with option = "key"', function (){
       var option = 'key'
@@ -1100,7 +1125,7 @@ describe('undertow', function (){
 
   });
 
-  describe('#groupBy3()', function () { 
+  describe('#groupBy3()', function () {
     var rows = [
           { id: 'josh', age: 7, sex: 'male',
             name: {
@@ -1140,7 +1165,7 @@ describe('undertow', function (){
         , 5: [rows[1]]
         }
       , results);
-    });    
+    });
 
     it('should groupBy3 with getter function', function (){
       var f = function (row) {
@@ -1157,7 +1182,7 @@ describe('undertow', function (){
 
   });
 
-  describe('#map3()', function () { 
+  describe('#map3()', function () {
       var rows = {
           'josh': {
             age: 7
@@ -1183,7 +1208,7 @@ describe('undertow', function (){
             , last: 'posh'
             }
           }
-        };   
+        };
 
     it('should map3 using a getter with function', function (){
       var getter = function (row) {
@@ -1235,7 +1260,7 @@ describe('undertow', function (){
   });
 
 
-  describe('#tally3()', function () { 
+  describe('#tally3()', function () {
       var rows = {
           'josh': {
             age: 7
@@ -1249,7 +1274,7 @@ describe('undertow', function (){
             age: 88
           , name: { first: 'josh', last: 'posh' }
           }
-        };   
+        };
 
     it('should tally3 using a getter with array of keys', function (){
       var getter = ['name', 'last']
@@ -1278,7 +1303,7 @@ describe('undertow', function (){
   });
 
 
-  describe('#hashify3()', function () { 
+  describe('#hashify3()', function () {
       var rows = [
           { nick: 'junior'
           , age: 7
@@ -1345,7 +1370,7 @@ describe('undertow', function (){
 
 
 
-  describe('#transpose3()', function () { 
+  describe('#transpose3()', function () {
 
     it('should transpose3', function (){
       var rows = [
@@ -1377,7 +1402,7 @@ describe('undertow', function (){
       ];
 
       var expected = {
-        1990: { 
+        1990: {
           id: '1990'
         , attr: [
             { key: 'A'
@@ -1386,7 +1411,7 @@ describe('undertow', function (){
           ]
         , C: 31
         }
-      , 1992: { 
+      , 1992: {
           id: '1992'
         , attr: [
             { key: 'B'
@@ -1395,32 +1420,32 @@ describe('undertow', function (){
           ]
         , C: 35
         }
-      , 2000: { 
+      , 2000: {
           id: '2000'
         , attr: [
             { key: 'A'
             , value: 2
-            }  
+            }
           , { key: 'B'
             , value: 24
             }
           ]
         }
-      , 2001: { 
+      , 2001: {
           id: '2001'
         , C: 99
-        }  
+        }
       };
 
       var srcRowGetter = ['data', 'label'];
       var dstPropSetters = {
-        'A': function(obj, value) { 
+        'A': function(obj, value) {
           if (!obj.attr) obj.attr = [];
-          obj.attr.push({ key: 'A', value: value}); 
+          obj.attr.push({ key: 'A', value: value});
         }
-      , 'B': function(obj, value) { 
+      , 'B': function(obj, value) {
           if (!obj.attr) obj.attr = [];
-          obj.attr.push({ key: 'B', value: value}); 
+          obj.attr.push({ key: 'B', value: value});
         }
       , 'C': 'C'
       };
@@ -1431,7 +1456,7 @@ describe('undertow', function (){
       , 2000: ['data', 'year', 2000]
       , 2001: ['data', 'year', 2001]
       };
-      var dstRowSetter = 'id';      
+      var dstRowSetter = 'id';
       var results = _.transpose3(rows, srcRowGetter, dstPropSetters, srcPropGetters, dstRowSetter);
 
       assert.deepEqual(results, expected);
@@ -1459,13 +1484,13 @@ describe('undertow', function (){
     ];
 
     var expected = {
-      1900: { 
+      1900: {
         label: '1900'
       , year: 1900
       , totalPopulation: 1
       , gQPopulation: 3
       }
-    , 1990: { 
+    , 1990: {
         label: '1990'
       , year: 1990
       , totalPopulation: 2
@@ -1485,7 +1510,7 @@ describe('undertow', function (){
       var srcPropGetters = {
         1900: ['data', 'year1']
       , 1990: ['data', 'year2']
-      }; 
+      };
       var dstRowSetter = function(obj, value) {
         obj.label = value.toString();
         obj.year = parseInt(value);
@@ -1503,15 +1528,15 @@ describe('undertow', function (){
       var dstPropSetters = {
         '1900': ['data', 'year1']
       , '1990': ['data', 'year2']
-      };  
+      };
       var srcPropGetters  = {
         'Year': 'year',
         'Total Population': 'totalPopulation'
       , 'Group Quarters Population Population': 'gQPopulation'
       };
-    
+
       var dstRowSetter = ['data', 'label'];
-      
+
       var results = _.values(_.transpose3(_.values(expected), srcRowGetter, dstPropSetters, srcPropGetters, dstRowSetter));
       assert.deepEqual(results, rows);
 
@@ -1544,7 +1569,7 @@ describe('undertow', function (){
     ];
 
     var expected3 = [
-      { 
+      {
         label: '2003'
       , year: 2003
       , employmentEntries: [
@@ -1556,7 +1581,7 @@ describe('undertow', function (){
           }
         ]
       }
-    , { 
+    , {
         label: '2005'
       , year: 2005
       , employmentEntries: [
@@ -1591,7 +1616,7 @@ describe('undertow', function (){
       var srcPropGetters = {
         2003: ['data', 'year1']
       , 2005: ['data', 'year2']
-      };      
+      };
       var dstRowSetter = function(obj, value) {
         obj.label = value.toString();
         obj.year = parseInt(value);
@@ -1627,7 +1652,7 @@ describe('undertow', function (){
       , 'Manufacturing': propGetFunc('Manufacturing')
       , 'Arts/Entertain/Rec.': propGetFunc('Arts/Entertain/Rec.')
       , 'Service': propGetFunc('Service')
-      };      
+      };
       var dstRowSetter = 'label';
 
       var results = _.values(_.transpose3(_.values(expected3), srcRowGetter, dstPropSetters, srcPropGetters, dstRowSetter));
@@ -1639,7 +1664,7 @@ describe('undertow', function (){
   });
 
 
-  describe('#tow()', function () { 
+  describe('#tow()', function () {
     var rows = [
           { id: 'josh', age: 7, sex: 'male',
             name: {
@@ -1675,10 +1700,10 @@ describe('undertow', function (){
 
       assert.deepEqual([rows[1], rows[0], rows[2]], results);
     });
-  
+
   });
 
-  describe('#towUnderscore()', function () { 
+  describe('#towUnderscore()', function () {
     var rows = [
           { id: 'josh', age: 7, sex: 'male',
             name: {
@@ -1714,6 +1739,6 @@ describe('undertow', function (){
 
       assert.deepEqual([rows[1], rows[0], rows[2]], results);
     });
-  
+
   });
 });

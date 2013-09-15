@@ -1,7 +1,9 @@
 undertow
 ========
 
-extension for underscore.js
+Some utility extensions for underscore.js.
 
-TO Test
-Run mocha
+Testing
+-------
+
+Run `grunt test`.

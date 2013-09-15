@@ -96,7 +96,9 @@
         if (type === 'object')
           return new constructor();        
       }
-      return [];
+      type = _.typeOf(thing);
+      if (type === 'array') return [];
+      return {};
     }
 
     /**
@@ -160,6 +162,44 @@
       }
     }
 
+    , classpath: function (className, extra) {
+  	  if (!className) return '';
+  	  if (!extra) extra = 0;
+	  
+      var parts = _.map(className.split('.'), function (t){ return t.toLowerCase(); });
+      parts.pop();
+      
+  	  return {
+  	    ladder: _.strrepeat('../', extra + parts.length)
+      , dir: parts.join('/') + '/'
+  	  }
+  	}
+	
+  , loadCss: function (url) {
+  	  if (!document) return false;
+	  
+	  var el, head = document.getElementsByTagName("head");
+	  
+	  if (head) {
+		  head = head[0];
+	  } else {
+		  return false;
+	  }
+	  
+  	  if (document.createStyleSheet) {
+  	    document.createStyleSheet(url);
+  	  } else {
+		  el = document.createElement("link");
+		  el.setAttribute("rel", "stylesheet");
+		  el.setAttribute("type", "text/css");
+		  el.setAttribute("href", url);
+		  if (typeof el !== "undefined") {
+			   head.appendChild(el);
+		   }
+	  }
+	  return true;
+  	} 
+	
     // https://gist.github.com/982883
   , uuid4: function b(a){return a?(a^Math.random()*16>>a/4).toString(16):([1e7]+-1e3+-4e3+-8e3+-1e11).replace(/[018]/g,b);}
 
@@ -169,6 +209,7 @@
       }
       return false;
     }
+	
 
   , now: function () {
       return new Date().toISOString();
@@ -364,7 +405,7 @@
         };
       } else { // x-www-form-urlencoded is default, follow java.net.URLEncoder
         f = function (val) {
-          return decodeURIComponent(val.replace(/\+/g, '%20'));
+          return decodeURIComponent(val.replace(/\+/g, '%20')); // ' ' instead of '%20' ?
         };
       }
       return f;
@@ -376,17 +417,39 @@
       return f(comp);
     }
 
+  , parseURL: function (qs, scheme) {
+	  // http://stackoverflow.com/questions/901115/how-can-i-get-query-string-values?lq=1
+	  // input = "entityID=https%3A%2F%2Fportal-dev.aurin.org.au%2Fshibboleth&return=https%3A%2F%2Fportal-dev.aurin.org.au%2FShibboleth.sso%2FDS%3FSAMLDS%3D1%26target%3Dcookie%253Ac10d82ae"
+	  
+      if (!qs) return {};	  
+      var match
+        , pl     = /\+/g  // Regex for replacing addition symbol with a space
+        , search = /([^&=]+)=?([^&]*)/g
+        , decode = function (s) { return decodeURIComponent(s.replace(pl, " ")); }
+		, params = {};
+      
+      while (match = search.exec(qs))
+         params[decode(match[1])] = decode(match[2]);		  
+      return params;
+    }
+	
   , cchfck: function(tag) {
       tag = tag || 'cchfck'; 
       return tag + '=' + Math.random();
     }
 
-  , tablize: function (obj) {
-      var html = '<table>', prop;
+  , tablize: function (obj, id, cls) {
+      var html = '<table' + ((id) ? ' id="' + id + '"' : '') + ((cls) ? ' class="' + cls + '"' : '') + '>', prop, val, valType;
   
       for (prop in obj) {
         html += '<tr><td>' + prop.toString() + '</td>';
-        html += '<td>' + obj[prop].toString() + '</td></tr>';
+		val = obj[prop];
+		valType = _.typeOf(val);
+		if (valType !== 'undefined' && valType !== 'null' ) {
+			html += '<td>' + val.toString() + '</td></tr>';
+		} else {
+			html += '<td>' + valType + '</td></tr>';			
+		}			
       }
       html += '</table>';
       return html;
@@ -832,7 +895,6 @@
       return _.extend(obj1, _.pick(obj2, keys));
     },
 
-    // shallow
     extendExcept: function (obj1, obj2, noKeys, deep) {
       var keys = _.difference(_.keys(obj2), noKeys);
 
@@ -842,6 +904,15 @@
       return obj1;
     },
 
+    extendIf: function (obj1, obj2, deep) {
+      var keys = _.keys(obj2);
+
+      _.each(keys, function (key, index) {
+        if (!(key in obj1)) obj1[key] = (deep) ? _.cloneDeep(obj2[key]) : obj2[key];
+      });
+      return obj1;
+    },
+    
     /**
      * Transform getter into getter function with closure:
      * Possible values for getter:
