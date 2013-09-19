@@ -595,22 +595,20 @@
 
     // obj is either JS hash or array
   , traverse: function (obj, arrKeys, create) {
-      var i, n = obj, j = arrKeys.length, k, defined;
+      var i, n = obj, j = arrKeys.length, k, t, old;
 
       for (i = 0; i < j; i++) {
         k = arrKeys[i];
-        if ((_.typeOf(n) === 'object' && k in n) || n[k]) {
-          defined = true;
+        t = _.typeOf(n);
+        if ( ((t === 'object' || t === 'array') && k in n) ||
+             ((t !== 'null' && t !== 'undefined') && n[k])
+          ) {
+          n = n[k];
         } else {
-          defined = false;
-        }
-        if (!defined) {
           if (!create) {
             return undefined;
           }
           n = n[k] = {};
-        } else {
-          n = n[k];
         }
       }
       return n;

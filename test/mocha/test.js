@@ -290,8 +290,16 @@ describe('undertow', function (){
     });
 
     it('should return null for non-existing keys', function (){
-      assert.equal(_.traverse(obj1, ["k2", "k3"]), null);
+      assert.equal(_.traverse(obj1, ["k3", "k4"]), undefined);
     });
+
+    it('should support string', function (){
+      assert.equal(_.traverse({"word": "forest"}, ["word", "length"]), 6);
+    });
+    
+    it('should support array', function (){
+      assert.equal(_.traverse([0, [1, 2, [3, 4, 5, 6]]], [1, 2, 3]), 6);
+    });    
 
     it('should create non-existing keys', function (){
       var obj = {}, create = true
