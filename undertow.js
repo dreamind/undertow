@@ -154,7 +154,8 @@
   , log: function (obj) {
       // logger should be an object
       if (typeof obj !== 'object') return;
-
+      
+      //var clonedArgs = _.clone(arguments); // snapshot of the state
       var classes = _.getClasses(obj);
       if (u.logFilters.length === 0 || _.arrIntersect(classes, u.logFilters)) {
         arguments[0] = classes[0] || obj;
@@ -202,6 +203,8 @@
 	
     // https://gist.github.com/982883
   , uuid4: function b(a){return a?(a^Math.random()*16>>a/4).toString(16):([1e7]+-1e3+-4e3+-8e3+-1e11).replace(/[018]/g,b);}
+
+  , uidtmp: function () {return new Date().getTime().toString();}
 
   , between: function (num, start, end) {
       if (num >= start && num <= end) {
@@ -320,6 +323,9 @@
           fraction = numStr.length-dot-1;
         }
         diff = (max - min);
+        if (diff === 0) {
+          return '0.00';
+        }
         nonzero = -2;        
         while (diff < 100) {
           diff *= 10;
@@ -621,6 +627,14 @@
       }
       return n;
     }
+    
+  , opath: function (obj, strKeys, defaultVal) {
+      var n = _.traverse(obj, strKeys.split('.'));
+      if(_.typeOf(n) === 'undefined' && defaultVal) {
+        n = defaultVal;
+      }
+      return n;
+    }    
 
   , update: function (obj, arrKeys, val, create) {
       var i, n = obj, j = arrKeys.length, k, nn, k_1;

@@ -375,6 +375,17 @@ describe('undertow', function (){
 
   });
 
+  describe('#opath()', function () {
+
+    it('should return the value of existing keys', function (){
+      assert.equal(_.opath(obj1, "k2.k21"), "k2-k21");
+    });
+
+    it('should return default value r non-existing keys', function (){
+      assert.equal(_.opath(obj1, "k2.k3", 'default'), 'default');
+    })
+
+  });
 
   describe('#remove()', function () {
     var obj = _.cloneDeep(obj1);
