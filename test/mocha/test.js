@@ -1,4 +1,4 @@
-var _ = require('../../undertow')
+var _ = require('../../src/undertow')
   , assert = require('chai').assert
   , getterCases = [
       "k1",
@@ -197,6 +197,76 @@ describe('undertow', function (){
 
   });
 
+  describe('#numberAutoFormat()', function () {
+
+    it('should work for whole number - difference: 100s', function (){
+      assert.equal(_.numberAutoFormat(4070, 5320), '0');
+    });
+
+    it('should work for whole number - difference: 100s', function (){
+      assert.equal(_.numberAutoFormat(407, 532), '0');
+    });
+
+    it('should work for whole number - difference: 10s', function (){
+      assert.equal(_.numberAutoFormat(30, 40), '0.0');
+    });
+
+    it('should work for whole number - difference: 1s', function (){
+      assert.equal(_.numberAutoFormat(3, 7), '0.00');
+    });
+
+    it('should work for float - case 1', function (){
+      assert.equal(_.numberAutoFormat(0.3, 0.4), '0.000');
+    });
+
+    it('should work for float - case 2', function (){
+      assert.equal(_.numberAutoFormat(0.700, 0.800), '0.000');
+    });
+
+    it('should work for float - case 3', function (){
+      assert.equal(_.numberAutoFormat(0.932910065, 1.045305964), '0.000');
+    });
+
+    it('should work for float - case 4', function (){
+      assert.equal(_.numberAutoFormat(46.0391117, 62.14470284), '0.00');
+    });
+
+    //
+
+    it('should work for whole number - difference: 100s', function (){
+      assert.equal(_.numberAutoFormat(4070, 5320, 1, 2), 0);
+    });
+
+    it('should work for whole number - difference: 100s', function (){
+      assert.equal(_.numberAutoFormat(407, 1532, 2, 3), '%4d');
+    });
+
+    it('should work for whole number - difference: 10s', function (){
+      assert.equal(_.numberAutoFormat(30, 40, 2), '%4.1f');
+    });
+
+    it('should work for whole number - difference: 1s', function (){
+      assert.equal(_.numberAutoFormat(3, 7), '0.00');
+    });
+
+    it('should work for float - case 1', function (){
+      assert.equal(_.numberAutoFormat(0.3, 0.4), '0.000');
+    });
+
+    it('should work for float - case 2', function (){
+      assert.equal(_.numberAutoFormat(0.700, 0.800), '0.000');
+    });
+
+    it('should work for float - case 3', function (){
+      assert.equal(_.numberAutoFormat(0.932910065, 1.045305964), '0.000');
+    });
+
+    it('should work for float - case 4', function (){
+      assert.equal(_.numberAutoFormat(46.0391117, 62.14470284), '0.00');
+    });
+
+  });
+
   describe('#numberFormat()', function () {
 
     it('should work for whole number - difference: 100s', function (){
@@ -296,10 +366,10 @@ describe('undertow', function (){
     it('should support string', function (){
       assert.equal(_.traverse({"word": "forest"}, ["word", "length"]), 6);
     });
-    
+
     it('should support array', function (){
       assert.equal(_.traverse([0, [1, 2, [3, 4, 5, 6]]], [1, 2, 3]), 6);
-    });    
+    });
 
     it('should create non-existing keys', function (){
       var obj = {}, create = true
@@ -505,7 +575,7 @@ describe('undertow', function (){
 
   });
 
-  describe('#pluck3()', function () {
+  describe('#a3()', function () {
 
     it('should pluck3', function (){
       var rows = [

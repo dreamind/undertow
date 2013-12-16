@@ -41,7 +41,7 @@
     if (!_) { // underscore not included
       console.log('underscore.js must be included');
       throw new Error('underscore.js is not defined');
-    }    
+    }
   }
 
   // define internal reference
@@ -56,7 +56,7 @@
     /**
      * Provide high-level typeof
      * based on http://javascript.crockford.com/remedial.html
-     *   
+     *
      * boolean: true | false
      * array: [1, 2, {4: 5}]
      * object: {name: john, scores: [90, 80]}
@@ -94,7 +94,7 @@
 
       if (constructor) {
         if (type === 'object')
-          return new constructor();        
+          return new constructor();
       }
       type = _.typeOf(thing);
       if (type === 'array') return [];
@@ -127,7 +127,7 @@
         }
       }
       className = thing.CLASS_NAME;
-      if (className) { // OpenLayers' OOP-style        
+      if (className) { // OpenLayers' OOP-style
         classes[0] = className;
         try {
           parent = evil(className + '.prototype.__proto__');
@@ -150,11 +150,11 @@
   , logSetFilter: function (filters) {
       u.logFilters = filters;
     }
-    
+
   , log: function (obj) {
       // logger should be an object
       if (typeof obj !== 'object') return;
-      
+
       //var clonedArgs = _.clone(arguments); // snapshot of the state
       var classes = _.getClasses(obj);
       if (u.logFilters.length === 0 || _.arrIntersect(classes, u.logFilters)) {
@@ -164,43 +164,43 @@
     }
 
     , classpath: function (className, extra) {
-  	  if (!className) return '';
-  	  if (!extra) extra = 0;
-	  
+      if (!className) return '';
+      if (!extra) extra = 0;
+
       var parts = _.map(className.split('.'), function (t){ return t.toLowerCase(); });
       parts.pop();
-      
-  	  return {
-  	    ladder: _.strrepeat('../', extra + parts.length)
+
+      return {
+        ladder: _.strrepeat('../', extra + parts.length)
       , dir: parts.join('/') + '/'
-  	  }
-  	}
-	
+      }
+    }
+
   , loadCss: function (url) {
-  	  if (!document) return false;
-	  
-	  var el, head = document.getElementsByTagName("head");
-	  
-	  if (head) {
-		  head = head[0];
-	  } else {
-		  return false;
-	  }
-	  
-  	  if (document.createStyleSheet) {
-  	    document.createStyleSheet(url);
-  	  } else {
-		  el = document.createElement("link");
-		  el.setAttribute("rel", "stylesheet");
-		  el.setAttribute("type", "text/css");
-		  el.setAttribute("href", url);
-		  if (typeof el !== "undefined") {
-			   head.appendChild(el);
-		   }
-	  }
-	  return true;
-  	} 
-	
+      if (!document) return false;
+
+    var el, head = document.getElementsByTagName("head");
+
+    if (head) {
+      head = head[0];
+    } else {
+      return false;
+    }
+
+      if (document.createStyleSheet) {
+        document.createStyleSheet(url);
+      } else {
+      el = document.createElement("link");
+      el.setAttribute("rel", "stylesheet");
+      el.setAttribute("type", "text/css");
+      el.setAttribute("href", url);
+      if (typeof el !== "undefined") {
+         head.appendChild(el);
+       }
+    }
+    return true;
+    }
+
     // https://gist.github.com/982883
   , uuid4: function b(a){return a?(a^Math.random()*16>>a/4).toString(16):([1e7]+-1e3+-4e3+-8e3+-1e11).replace(/[018]/g,b);}
 
@@ -212,7 +212,7 @@
       }
       return false;
     }
-	
+
 
   , now: function () {
       return new Date().toISOString();
@@ -225,7 +225,7 @@
       var type   = _.typeOf(val)
         , el     = (type === 'array') ? val : [val]
         , result = el
-        , idx    = 1;        
+        , idx    = 1;
 
       while (true) {
         idx <<= 1;
@@ -233,7 +233,7 @@
           idx >>= 1;
           break;
         }
-        result = result.concat(result);        
+        result = result.concat(result);
       }
       idx = num - idx;
       while (idx > 0) {
@@ -280,14 +280,14 @@
       , getClassPath: function (depth) {
           if (_.typeOf(depth) === 'string') {
             depth = depth.split('.').length;
-          } 
+          }
           if (_.typeOf(depth) === 'number') {
             return this.getRootPath() + this.dirArr.slice(0, depth).join('/');
           }
-          return this.getRootPath() + this.getNamespacePath();  
+          return this.getRootPath() + this.getNamespacePath();
         }
       , init: function () {
-          this.rootPath = _.strrepeat('../', 2 + (this.className.match(/\./g) || []).length) + this.pathPad;        
+          this.rootPath = _.strrepeat('../', 2 + (this.className.match(/\./g) || []).length) + this.pathPad;
           this.dirArr = this.className.toLowerCase().split(".");
           this.namespacePath = this.dirArr.slice(0, -1).join("/");
         }
@@ -310,6 +310,99 @@
       return result;
     }
 
+    /*
+     * style:
+     * - 0 (default): '0.00'
+     * - 1: 2 (decimalPrecision)
+     * - 2: '%5.2f' (sprintf style)
+     */
+  , numberAutoFormat: function (min, max, style, pad) {
+
+      function detect (num) {
+        var str = num.toString()
+          , len = str.length
+          , dot = str.indexOf('.')
+          , whole, fraction;
+
+        if (dot === -1) {
+          whole    = len;
+          fraction = 0;
+        } else {
+          whole    = dot;
+          fraction = len - dot - 1;
+        }
+        return {
+          whole: whole
+        , fraction: fraction
+        };
+      }
+
+      function styler (whole, fraction, style, pad) {
+        pad = pad || 0;
+
+        if (style === 2) {
+          if (fraction === 0) {
+            return '%' + (whole + pad) + 'd';
+          } else {
+            return '%' + (whole + pad + fraction + 1) + '.' + fraction + 'f';
+          }
+        } else if (style === 1) {
+          return fraction;
+        }
+        // default
+        if (fraction === 0) {
+          return '0';
+        }
+        return '0.' + _.strrepeat('0', fraction);
+      }
+
+      var mi, ma, diff, nonzero, whole, fraction;
+      // 0.932910065, 1.045305964
+
+      try {
+        mi = detect(min);
+        ma = detect(max);
+
+        whole    = _.max([mi.whole, ma.whole]);
+        fraction = _.max([mi.fraction, ma.fraction]);
+
+        diff = Math.abs(max - min);
+        if (diff === 0) {
+          whole    = 1;
+          fraction = 2;
+        } else {
+          nonzero = -2;
+          while (diff < 100) {
+            diff *= 10;
+            nonzero++;
+          }
+          nonzero += 2; // increase by two
+
+          if (nonzero === 0) { //  diff in hundreds
+            whole    = 1;
+            fraction = 0;
+          } else {
+            if (nonzero > fraction) {
+              fraction = nonzero;
+            } else if (fraction - nonzero > 2) {
+              if (fraction > 2 && nonzero <= 1) {
+                fraction = 2;
+              } else {
+                fraction = nonzero;
+              }
+            }
+            if (fraction < 1 ) {
+              fraction = 1;
+            }
+          }
+        }
+      } catch (err) {
+        whole    = 1;
+        fraction = 2;
+      }
+      return styler(whole, fraction, style, pad);
+    }
+
   , numberFormat: function (min, max) {
       var numStr, dot, diff, fraction, nonzero;
       // 0.932910065, 1.045305964
@@ -326,7 +419,7 @@
         if (diff === 0) {
           return '0.00';
         }
-        nonzero = -2;        
+        nonzero = -2;
         while (diff < 100) {
           diff *= 10;
           nonzero++;
@@ -334,7 +427,7 @@
         nonzero += 2; // increase by two
 
         if (nonzero === 0) { //  diff in hundreds
-           return '0';   
+           return '0';
         } else if (nonzero > fraction) {
           fraction = nonzero;
         } else if (fraction - nonzero > 2) {
@@ -342,7 +435,7 @@
             fraction = 2;
           } else {
             fraction = nonzero;
-          }          
+          }
         }
         if (fraction < 1 ) {
           fraction = 1;
@@ -350,7 +443,7 @@
         return '0.' + _.strrepeat('0', fraction);
       } catch(err) {
 
-      }      
+      }
       return '0.00';
     }
 
@@ -424,38 +517,38 @@
     }
 
   , parseURL: function (qs, scheme) {
-	  // http://stackoverflow.com/questions/901115/how-can-i-get-query-string-values?lq=1
-	  // input = "entityID=https%3A%2F%2Fportal-dev.aurin.org.au%2Fshibboleth&return=https%3A%2F%2Fportal-dev.aurin.org.au%2FShibboleth.sso%2FDS%3FSAMLDS%3D1%26target%3Dcookie%253Ac10d82ae"
-	  
-      if (!qs) return {};	  
+    // http://stackoverflow.com/questions/901115/how-can-i-get-query-string-values?lq=1
+    // input = "entityID=https%3A%2F%2Fportal-dev.aurin.org.au%2Fshibboleth&return=https%3A%2F%2Fportal-dev.aurin.org.au%2FShibboleth.sso%2FDS%3FSAMLDS%3D1%26target%3Dcookie%253Ac10d82ae"
+
+      if (!qs) return {};
       var match
         , pl     = /\+/g  // Regex for replacing addition symbol with a space
         , search = /([^&=]+)=?([^&]*)/g
         , decode = function (s) { return decodeURIComponent(s.replace(pl, " ")); }
-		, params = {};
-      
+    , params = {};
+
       while (match = search.exec(qs))
-         params[decode(match[1])] = decode(match[2]);		  
+         params[decode(match[1])] = decode(match[2]);
       return params;
     }
-	
+
   , cchfck: function(tag) {
-      tag = tag || 'cchfck'; 
+      tag = tag || 'cchfck';
       return tag + '=' + Math.random();
     }
 
   , tablize: function (obj, id, cls) {
       var html = '<table' + ((id) ? ' id="' + id + '"' : '') + ((cls) ? ' class="' + cls + '"' : '') + '>', prop, val, valType;
-  
+
       for (prop in obj) {
         html += '<tr><td>' + prop.toString() + '</td>';
-		val = obj[prop];
-		valType = _.typeOf(val);
-		if (valType !== 'undefined' && valType !== 'null' ) {
-			html += '<td>' + val.toString() + '</td></tr>';
-		} else {
-			html += '<td>' + valType + '</td></tr>';			
-		}			
+    val = obj[prop];
+    valType = _.typeOf(val);
+    if (valType !== 'undefined' && valType !== 'null' ) {
+      html += '<td>' + val.toString() + '</td></tr>';
+    } else {
+      html += '<td>' + valType + '</td></tr>';
+    }
       }
       html += '</table>';
       return html;
@@ -472,7 +565,7 @@
         }
       }
       return false;
-    }    
+    }
 
   , strjoin: function (arr, getter, quote, separator) {
       var f = _.getterx(getter)
@@ -489,7 +582,7 @@
         q0 = q1 = quote;
       }
       if (typeof separator === 'undefined' || separator === null) separator = ',';
-      
+
       for (i = 0; i < j; i++) {
         result += q0 + f(arr[i]) + q1;
         if (i < j-1) {
@@ -503,7 +596,7 @@
       var isDelimiter, isDelim, found
         , delimiters = delimiters || '\t '
         , snip, i = 0, j = str.length, k, l = delimiters.length, delim, delimCount
-        , tokens = [], t = 0, ctoken = '', ch = null, c        
+        , tokens = [], t = 0, ctoken = '', ch = null, c
         , singleSpace = (_.typeOf(singleSpace) === 'undefined') ? true : singleSpace; // except
 
       while (i < j) {
@@ -518,7 +611,7 @@
             if (ch === ' ' && delimiters.indexOf(str.charAt(i+1)) === -1) {
               isDelimiter = false;
             }
-          } 
+          }
           if (isDelimiter && isDelim !== isDelimiter) {
             // char -> delimiter
             tokens[t++] = ctoken;
@@ -543,7 +636,7 @@
         , i, j = lines.length, output = ''
         , gutter = '  ', line, k, l, len, len2, val, pad
         , maxLen = [];
-  
+
       lines = _.map(lines, function (line) { return _.splitg(line);} );
 
       for (i = 0; i < j; i++) {
@@ -575,8 +668,8 @@
           }
         }
         if (i < j-1) {
-          output += '\n';  
-        }        
+          output += '\n';
+        }
       }
 
       return output;
@@ -588,7 +681,7 @@
 
       props = ns.split('.');
       try {
-        obj = evil(props[0]);  
+        obj = evil(props[0]);
       } catch(e) {
         evil('var '+props[0]+'={};');
         obj = evil(props[0]);
@@ -627,18 +720,18 @@
       }
       return n;
     }
-    
+
   , opath: function (obj, strKeys, defaultVal) {
       var n = _.traverse(obj, strKeys.split('.'));
       if(_.typeOf(n) === 'undefined' && defaultVal) {
         n = defaultVal;
       }
       return n;
-    }    
+    }
 
   , update: function (obj, arrKeys, val, create) {
       var i, n = obj, j = arrKeys.length, k, nn, k_1;
-      
+
       for (i = 0; i < j-1; i++) {
         k = arrKeys[i];
         if (n[k]) {
@@ -678,7 +771,7 @@
 
   , add: function (obj, key, val) {
       if (!(key in obj)) {
-        obj[key] = val || 1;
+        obj[key] = val;
       }
       return obj;
     }
@@ -796,8 +889,9 @@
 
   // quick pick, with no hasOwnProperty checking
   , qpick: function (obj, arr, defaultVal) {
-      var result = {}
-        , j = arr.length, key;
+      var result = {}, j = arr.length, key;
+
+      if (!obj) return defaultVal;
 
       while (j--) {
         key = arr[j];
@@ -806,7 +900,7 @@
         } else {
           if (_.typeOf(defaultVal) !== 'undefined') {
             result[key] = defaultVal;
-          }          
+          }
         }
       }
       return result;
@@ -868,7 +962,7 @@
 
   , qfind: function (arr, key, value) {
       var i, j = arr.length;
-  
+
       for (i = 0; i < j; i++) {
         if (arr[i][key] === value)
           return arr[i];
@@ -882,21 +976,21 @@
       for (key in obj) {
         keys[keys.length] = key;
       }
-      return keys;      
+      return keys;
   }
   , qextend: function (obj1, obj2, noKeys, onlyKeys) {
       var hashOk = null, hashReject = null;
-      
+
       if (noKeys) {
         hashReject = _.hashify(noKeys);
-      } 
+      }
       if (onlyKeys) {
         hashOk = _.hashify(onlyKeys);
-      } 
+      }
 
       for (key in obj2) {
         if (hashOk && !(key in hashOk)) { continue; }
-        if (hashReject && key in hashReject) { continue; }        
+        if (hashReject && key in hashReject) { continue; }
         obj1[key] = obj2[key];
       }
       return obj1;
@@ -924,7 +1018,7 @@
       });
       return obj1;
     },
-    
+
     /**
      * Transform getter into getter function with closure:
      * Possible values for getter:
@@ -971,7 +1065,7 @@
           };
 
       if (type === 'string'  || type === 'number') {
-        f = function (obj, value) {          
+        f = function (obj, value) {
           obj[setter] = value;
           return obj;
         };
@@ -1098,7 +1192,7 @@
      * @param {Object} object An object
      * @param {Object} extractorfs Extractor functions
      */
-  , extract1: function (obj, extractorfs) { 
+  , extract1: function (obj, extractorfs) {
       var results = []
         , extractorf, i, j;
 
@@ -1116,7 +1210,7 @@
      * @param {Object} object2 Destination object
      * @param {Object} translatorfs Translator functions
      */
-  , translate1: function (obj1, obj2, translatorfs) { 
+  , translate1: function (obj1, obj2, translatorfs) {
       var translatorf, i, j;
 
       if (!obj2) obj2 = {};
@@ -1155,7 +1249,7 @@
   , pluck3: function (rows, getter) {
       var results = _.blankOf(rows)
         , f = _.getterx(getter);
-      
+
       _.each(rows, function (row, index) {
         results[index] = f(row);
       });
@@ -1182,7 +1276,7 @@
       // shallow flatten
       var getterArgs = _.flatten(slice.call(arguments, 1), true)
         , extractors = [];
-      
+
       _.each(getterArgs, function (getter) {
         extractors[extractors.length] = { 'getter': getter };
       });
@@ -1233,7 +1327,7 @@
         , results = _.blankOf(rows)
         , matcherfs = _.matcherx(matchers, exact);
 
-      _.each(rows, function (row, index) {      
+      _.each(rows, function (row, index) {
         if (_.match1(row, matcherfs, exact)) {
           results[(isArray) ? results.length : index] = row;
         }
@@ -1259,7 +1353,7 @@
         if ( (exact && _.isEqual(row, obj)) ||
               (!exact && _.isIntersect(row, obj)) ) {
           results[(isArray) ? results.length : index] = row;
-        } 
+        }
       });
       return results;
     }
@@ -1292,7 +1386,7 @@
         var newRow = {};
         if (!filter) {
           _.extendExcept(newRow, row, keys, deep);
-        } 
+        }
         _.each(keys, function (key, index) {
           if (key in row) newRow[(newKeys) ? newKeys[index] : key] = row[key];
         });
@@ -1305,7 +1399,7 @@
       _.each(rows, function (row) { // each rows
         var key = keyf(row);
         if (key in keyDict) return;
-        keyDict[key] = 1;        
+        keyDict[key] = 1;
         results[results.length] = valuef(row, key);
       });
     }
@@ -1346,7 +1440,7 @@
      * union3(rows1, rows2, 'name') returns all rows
      */
   , union3: function (rowses, getter, depth) {
-      var clonef = _.clonef(depth) 
+      var clonef = _.clonef(depth)
         , getterf = _.getterx(getter)
         , results = []
         , keyDict = {};
@@ -1361,7 +1455,7 @@
       option:
       - number -> depth
       - 'key' -> use the key value
-      - array -> translators      
+      - array -> translators
     */
   , unique3: function (rows, getter, option) {
       var getterf = _.getterx(getter), valuef, translatefs
@@ -1374,14 +1468,14 @@
         clonef = _.clonef(option);
         valuef = function (row) { return clonef(row); };
       } else if (option === 'key') {
-        setterf = _.setterx(getter);        
-        valuef = function (row, key) { return setterf({}, key); }; 
+        setterf = _.setterx(getter);
+        valuef = function (row, key) { return setterf({}, key); };
       } else if (type === 'array') {
         translatefs = _.translatorx(option);
         valuef = function (row) { return _.translate1(row, {}, translatefs); };
       } else {
-        valuef = function (row, key) { return key; }; 
-      }      
+        valuef = function (row, key) { return key; };
+      }
       _.appendIf(rows, results, keyDict, getterf, valuef);
       return results;
     }
@@ -1392,7 +1486,7 @@
      *
      * @param {Object} rows Collection
      * @param {Object} getter getter of an object
-     * 
+     *
      */
   , groupBy3: function (rows, getter) {
       var f = _.getterx(getter);
@@ -1402,7 +1496,7 @@
     /**
      * Map for rows based on a getter
      *
-     * @param {Object} rows Collection 
+     * @param {Object} rows Collection
      * @param {Object} getter
      * @param {Function} iterator
      */
@@ -1502,7 +1596,7 @@
   , attr: [
       { key: 'A'
       , value: 2
-      }  
+      }
     , { key: 'B'
       , value: 24
       }
@@ -1510,7 +1604,7 @@
   }
 , { id: 2001
   , C: 99
-  }  
+  }
 ]
 
 srcRowGetter: ['data', 'label'] // return 'A', 'B', 'C'
@@ -1523,13 +1617,13 @@ srcPropGetters, { // return values
 
 dstRowSetter: 'id'
 dstPropSetters: {
-  'A': function(obj, value) { 
+  'A': function(obj, value) {
     if (!obj.attr) obj.attr = [];
-    obj.attr.push({ key: 'A', value: value}); 
+    obj.attr.push({ key: 'A', value: value});
   }
-, 'B': function(obj, value) { 
+, 'B': function(obj, value) {
     if (!obj.attr) obj.attr = [];
-    obj.attr.push({ key: 'A', value: value}); 
+    obj.attr.push({ key: 'A', value: value});
   }
 , 'C': 'C'
 }
@@ -1554,15 +1648,15 @@ dstPropSetters: {
           if (!(dstKey in results)) {
             dstKeys.push(dstKey);
             results[dstKey] = result = {};
-            _.plunk(result, dstRowSetter, dstKey);     
+            _.plunk(result, dstRowSetter, dstKey);
           } else {
             result = results[dstKey];
           }
 
           value = _.cull(row, srcPropGetter);
           if (propSetter && _.typeOf(value) !== 'undefined') {
-            _.plunk(result, propSetter, value);  
-          }       
+            _.plunk(result, propSetter, value);
+          }
         });
       });
       return results;
@@ -1588,7 +1682,7 @@ dstPropSetters: {
 
   , towUnderscore: function (fs) {
       fs = fs || ['max', 'min', 'sortBy'];
-      
+
       _.each(fs, function (fname) {
         _[fname+'3'] = _.tow(_[fname]);
       });
