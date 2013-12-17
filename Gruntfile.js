@@ -177,7 +177,8 @@ module.exports = function(grunt) {
     grunt.loadNpmTasks('grunt-ssh');
 
     grunt.registerTask('package', ['copy', 'uglify']);
-    grunt.registerTask('test', ['mochaTest', 'mochacov', 'qunit']);
+    grunt.registerTask('test', ['mochaTest', 'qunit']);
+    grunt.registerTask('coverage', ['mochacov', 'qunit']);
     grunt.registerTask('default', ['uglify']);
   }
 
