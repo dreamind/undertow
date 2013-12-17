@@ -479,14 +479,14 @@ describe('undertow', function (){
 
     it('should add to an empty set', function (){
       var obj = {};
-      assert.deepEqual(_.add(obj, 'a'), {a: 1});
+      assert.deepEqual(_.add(obj, 'a', 1), {a: 1});
     });
 
     it('should add to an existing set', function (){
       var obj = { a: 1 };
 
       assert.deepEqual(_.add(obj, 'a'), {a: 1});
-      assert.deepEqual(_.add(obj, 'b'), {a: 1, b: 1});
+      assert.deepEqual(_.add(obj, 'b', 1), {a: 1, b: 1});
     });
 
   });

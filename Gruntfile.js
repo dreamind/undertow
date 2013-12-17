@@ -1,19 +1,43 @@
+/*
+ * undertow Gruntfile.js
+ *
+ * Private options could be set through .undertowrc in user HOME directory
+ *
+ */
 'use strict';
+
+require('sugar');
+var _ = require('undertow');
+var fs = require('fs');
 
 module.exports = function(grunt) {
 
-  var fs = require('fs');
+  var home = process.env.HOME
+    , optionFile = home + '.undertowrc'
+    , userOptions = {};
+
+  var options = {
+    deployTarget: {
+      host: 'apps.aurin.org.au',
+      username: 'dev',
+      privateKey: fs.readFileSync(home + '/.ssh/id_rsa').toString(),
+      passphrase: fs.readFileSync(home + '/.ssh/passphrase.txt').toString(),
+      pty: true
+    }
+  };
 
   main();
 
   function main() {
 
-    var sshOpt = {
-      host: 'apps.aurin.org.au',
-      username: 'dev',
-      privateKey: fs.readFileSync(process.env.HOME + '/.ssh/id_rsa').toString(),
-      passphrase: fs.readFileSync(process.env.HOME + '/.ssh/passphrase.txt').toString()
-    };
+    if (fs.existsSync(optionFile)) {
+      try {
+        userOptions = jf.readFileSync(optionFile);
+      } catch (e) {
+        console.log('Fail to read ' + optionFile);
+      }
+    }
+    options = _.extend(options, userOptions);
 
     // some defaults
     var config = {
@@ -27,6 +51,9 @@ module.exports = function(grunt) {
 
     grunt.initConfig({
       pkg: grunt.file.readJSON('package.json'), // <%= pkg.name %> is available
+      clean: {
+        build: ['target']
+      },
       copy: {
         files: {
           cwd: config.jsSrc,
@@ -35,9 +62,11 @@ module.exports = function(grunt) {
           expand: true // allow dynamic building
         }
       },
+
       uglify: {
         options: {
-          preserveComments: false
+          preserveComments: false,
+          sourceMap: function(path) { return path.replace(/.js/, ".map")}
         },
         files: {
           cwd: config.jsSrc,
@@ -54,7 +83,7 @@ module.exports = function(grunt) {
           reporterOutput: 'target/jshint-report.txt'
         },
       },
-      // server side test: plain mocha
+      // plain mocha test
       mochaTest: {
         test: {
           options: {
@@ -63,7 +92,7 @@ module.exports = function(grunt) {
           src: ['test/mocha/**/*.js']
         }
       },
-      // server side test & coverage: using blanket
+      // mocha coverage: using blanket
       mochacov: {
         'html-cov': {
           options: {
@@ -83,7 +112,7 @@ module.exports = function(grunt) {
           src: ['test/mocha/**/*.js']
         }
       },
-      // client side test & coverage: using istanbul & phantomjs
+      // qunit test & coverage: using istanbul & phantomjs
       qunit: {
         files: ['test/qunit/**/*.html'],
         options: {
@@ -105,14 +134,14 @@ module.exports = function(grunt) {
           },
           files: [{
             expand: true,
-            cwd: config.jsDist,
-            src: [config.jsFileMask]
+            cwd: 'target/dist',
+            src: ['<%= pkg.version %>/' + config.jsFileMask]
           }]
         }
       },
       // scp target/undertow-0.x.x.tgz dev@apps.aurin.org.au:/home/dev
       scp: {
-        options: sshOpt,
+        options: options.deployTarget,
         main: {
             files: [{
               cwd: 'target', // must be set
@@ -121,11 +150,14 @@ module.exports = function(grunt) {
             }]
         },
       },
-      // ssh -t dev@apps.aurin.org.au sudo tar xvf /home/dev/undertow-0.x.x.tgz -C /var/www/html/apps.aurin.org.au/assets/js/undertow
+      /* ssh -t dev@apps.aurin.org.au
+       *   sudo tar xvf /home/dev/undertow-0.x.x.tgz
+       *   -C /var/www/html/apps.aurin.org.au/assets/js/undertow
+       */
       sshexec: {
         test: {
-          command: 'sudo tar xvf /home/dev/' + config.deployArchive + '-C /var/www/html/apps.aurin.org.au/assets/js/undertow',
-          options: sshOpt
+          command: 'sudo tar xvf /home/dev/' + config.deployArchive + ' -C /var/www/html/apps.aurin.org.au/assets/js/undertow',
+          options: options.deployTarget
         }
       }
     });
@@ -134,6 +166,7 @@ module.exports = function(grunt) {
     grunt.loadNpmTasks('grunt-contrib-uglify');
     grunt.loadNpmTasks('grunt-contrib-jshint');
     grunt.loadNpmTasks('grunt-contrib-qunit');
+    grunt.loadNpmTasks('grunt-contrib-clean');
     grunt.loadNpmTasks('grunt-qunit-istanbul');
     grunt.loadNpmTasks('grunt-mocha-test');
     grunt.loadNpmTasks('grunt-mocha-cov');
@@ -142,7 +175,7 @@ module.exports = function(grunt) {
     grunt.loadNpmTasks('grunt-ssh');
 
     grunt.registerTask('package', ['copy', 'uglify']);
-    grunt.registerTask('test', ['mochaTest', 'qunit']);
+    grunt.registerTask('test', ['mochaTest', 'mochacov', 'qunit']);
     grunt.registerTask('default', ['uglify']);
   }
 
