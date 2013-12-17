@@ -7,7 +7,6 @@
 'use strict';
 
 require('sugar');
-var _ = require('undertow');
 var fs = require('fs');
 
 module.exports = function(grunt) {
