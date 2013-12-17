@@ -7,36 +7,39 @@
 'use strict';
 
 require('sugar');
+var _ = require('underscore');
 var fs = require('fs');
 
 module.exports = function(grunt) {
 
   var home = process.env.HOME
     , optionFile = home + '.undertowrc'
+    , privateKey = home + '/.ssh/id_rsa'
+    , passPhrase = home + '/.ssh/passphrase.txt'
     , userOptions = {};
 
   var options = {
     deployTarget: {
       host: 'apps.aurin.org.au',
       username: 'dev',
-      privateKey: fs.readFileSync(home + '/.ssh/id_rsa').toString(),
-      passphrase: fs.readFileSync(home + '/.ssh/passphrase.txt').toString(),
+      privateKey: null,
+      passphrase: null,
       pty: true
     }
   };
 
+  if (fs.existsSync(privateKey)) {
+    options.deployTarget.privateKey = fs.readFileSync(privateKey).toString();
+  }
+  if (fs.existsSync(passPhrase)) {
+    options.deployTarget.passPhrase = fs.readFileSync(passPhrase).toString();
+  }
+  if (fs.existsSync(optionFile)) { userOptions = jf.readFileSync(optionFile); }
+  options = _.extend(options, userOptions);
+
   main();
 
   function main() {
-
-    if (fs.existsSync(optionFile)) {
-      try {
-        userOptions = jf.readFileSync(optionFile);
-      } catch (e) {
-        console.log('Fail to read ' + optionFile);
-      }
-    }
-    options = _.extend(options, userOptions);
 
     // some defaults
     var config = {
