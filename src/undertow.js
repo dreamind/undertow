@@ -214,12 +214,17 @@
     }
 
 
-  , now: function () {
-      return new Date().toISOString();
+  , now: function (format) {
+      // format depends on sugarjs
+      var now = Date.create();
+
+      if (!format) { return now.toISOString(); }
+      return now.format(format);
     }
 
   , amult: function (val, num) {
-      // http://stackoverflow.com/questions/12503146/create-an-array-with-same-element-repeated-multiple-times-in-javascript
+      // http://stackoverflow.com/questions/12503146/
+      // create-an-array-with-same-element-repeated-multiple-times-in-javascript
 
       if (!num) return [];
       var type   = _.typeOf(val)
@@ -756,6 +761,16 @@
       }
       n[arrKeys[j-1]] = val;
       return obj;
+    }
+    
+  , updateIf: function (obj1, obj2, colKeys) {
+      _.each(colKeys, function(key) {
+        var val = obj2[key];
+        if (!_.isUndefined(val)) {
+          _.update(obj1, [key], val, 1);          
+        }
+      });
+      return obj1;
     }
 
   , remove: function (obj, arrKeys, val) {

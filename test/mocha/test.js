@@ -431,6 +431,28 @@ describe('undertow', function (){
     });
 
   });
+  
+  describe('#updateIf()', function () {
+
+    
+    it('should return the value of updateIf', function (){
+      var obj1 = {
+        a: 0,
+        b: 2
+      };
+      var obj2 = {
+        a: 1,
+        c: 3        
+      };
+      
+      assert.deepEqual(_.updateIf(obj1, obj2, ["a", 'c', 'y']), {
+        a: 1,
+        b: 2,
+        c: 3
+      });
+    });
+
+  });
 
   describe('#read()', function () {
 
