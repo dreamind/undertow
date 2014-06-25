@@ -1,7 +1,7 @@
 {
   "name": "undertow",
   "preferGlobal": "true",
-  "version": "0.0.5",
+  "version": "0.0.6",
   "author": {
     "name": "Ivo Widjaja",
     "email": "dreamind@gmail.com"
@@ -70,6 +70,7 @@
   "engine": {
     "node": ">=0.6"
   },
+  "main": "src/undertow.js",
   "scripts": {
     "test": "grunt test --verbose",
     "blanket": {
