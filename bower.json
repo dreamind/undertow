@@ -10,7 +10,6 @@
   "moduleType": [],
   "license": "MIT",
   "ignore": [
-    "**/.*",
     ".gitignore",
     ".jshintrc",
     ".travis.yml",
