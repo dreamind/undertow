@@ -1,6 +1,7 @@
 !.jshintrc
 
 .classpath
+.idea
 .project
 .tmp/
 .settings/
