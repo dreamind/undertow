@@ -1,0 +1,23 @@
+{
+  "name": "undertow",
+  "version": "0.0.6",
+  "homepage": "https://github.com/dreamind/undertow",
+  "authors": [
+    "Ivo Widjaja"
+  ],
+  "description": "An extension to underscore.js",
+  "main": "src/undertow.js",
+  "moduleType": [],
+  "license": "MIT",
+  "ignore": [
+    "**/.*",
+    ".gitignore",
+    ".jshintrc",
+    ".travis.yml",
+    "Gruntfile.js",
+    "npm-publish.sh",
+    "t-unit-mocha.sh",
+    "node_modules",
+    "test"
+  ]
+}
